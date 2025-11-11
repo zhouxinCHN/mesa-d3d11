@@ -1,0 +1,2144 @@
+From bb89cf4bf396c84b0aadb6251a083214e6055600 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+Date: Sun, 6 Jun 2021 02:23:31 -0400
+Subject: [PATCH] gallium: add take_ownership into set_sampler_views to skip
+ reference counting
+
+Reviewed-By: Mike Blumenkrantz <michael.blumenkrantz@gmail.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/12334>
+---
+ src/gallium/auxiliary/cso_cache/cso_context.c |  2 +-
+ .../auxiliary/draw/draw_pipe_pstipple.c       |  9 +++--
+ .../auxiliary/driver_ddebug/dd_context.c      |  3 +-
+ .../auxiliary/driver_noop/noop_state.c        |  1 +
+ .../auxiliary/driver_rbug/rbug_context.c      |  3 +-
+ .../auxiliary/driver_trace/tr_context.c       |  4 +-
+ src/gallium/auxiliary/hud/hud_context.c       |  4 +-
+ src/gallium/auxiliary/postprocess/pp_colors.c |  2 +-
+ src/gallium/auxiliary/postprocess/pp_mlaa.c   |  6 +--
+ src/gallium/auxiliary/postprocess/pp_run.c    |  2 +-
+ src/gallium/auxiliary/util/u_blitter.c        | 15 ++++----
+ src/gallium/auxiliary/util/u_compute.c        |  4 +-
+ src/gallium/auxiliary/util/u_tests.c          |  4 +-
+ .../auxiliary/util/u_threaded_context.c       | 37 ++++++++++++-------
+ src/gallium/auxiliary/vl/vl_bicubic_filter.c  |  2 +-
+ src/gallium/auxiliary/vl/vl_compositor_cs.c   |  4 +-
+ src/gallium/auxiliary/vl/vl_compositor_gfx.c  |  2 +-
+ src/gallium/auxiliary/vl/vl_deint_filter.c    |  3 +-
+ src/gallium/auxiliary/vl/vl_idct.c            |  4 +-
+ src/gallium/auxiliary/vl/vl_matrix_filter.c   |  2 +-
+ src/gallium/auxiliary/vl/vl_mc.c              |  2 +-
+ src/gallium/auxiliary/vl/vl_median_filter.c   |  2 +-
+ src/gallium/auxiliary/vl/vl_mpeg12_decoder.c  |  2 +-
+ src/gallium/auxiliary/vl/vl_zscan.c           |  2 +-
+ src/gallium/drivers/asahi/agx_state.c         | 11 +++++-
+ src/gallium/drivers/crocus/crocus_state.c     | 13 ++++++-
+ src/gallium/drivers/d3d12/d3d12_blit.cpp      |  2 +-
+ src/gallium/drivers/d3d12/d3d12_context.cpp   |  8 +++-
+ src/gallium/drivers/etnaviv/etnaviv_texture.c | 20 +++++++---
+ .../drivers/freedreno/a2xx/fd2_texture.c      |  3 +-
+ .../drivers/freedreno/a4xx/fd4_texture.c      |  3 +-
+ .../drivers/freedreno/a5xx/fd5_texture.c      |  3 +-
+ .../drivers/freedreno/a6xx/fd6_texture.c      |  3 +-
+ .../drivers/freedreno/freedreno_texture.c     | 14 +++++--
+ .../drivers/freedreno/freedreno_texture.h     |  1 +
+ src/gallium/drivers/i915/i915_state.c         | 17 ++++++++-
+ src/gallium/drivers/iris/iris_state.c         | 12 +++++-
+ src/gallium/drivers/lima/lima_state.c         |  9 ++++-
+ .../drivers/llvmpipe/lp_state_sampler.c       | 12 +++++-
+ .../drivers/nouveau/nv30/nv30_context.h       |  4 +-
+ .../drivers/nouveau/nv30/nv30_fragtex.c       | 13 +++++--
+ .../drivers/nouveau/nv30/nv40_verttex.c       |  8 +++-
+ src/gallium/drivers/nouveau/nv50/nv50_state.c | 12 ++++--
+ src/gallium/drivers/nouveau/nvc0/nvc0_state.c | 17 +++++++--
+ src/gallium/drivers/panfrost/pan_context.c    | 11 +++++-
+ src/gallium/drivers/r300/r300_state.c         | 26 +++++++++----
+ src/gallium/drivers/r600/r600_state_common.c  | 12 +++++-
+ src/gallium/drivers/radeonsi/si_descriptors.c | 22 ++++++++---
+ src/gallium/drivers/softpipe/sp_state.h       |  1 +
+ .../drivers/softpipe/sp_state_derived.c       |  2 +-
+ .../drivers/softpipe/sp_state_sampler.c       |  9 ++++-
+ src/gallium/drivers/svga/svga_pipe_sampler.c  | 17 +++++++--
+ src/gallium/drivers/swr/swr_state.cpp         | 11 +++++-
+ src/gallium/drivers/tegra/tegra_context.c     |  3 +-
+ src/gallium/drivers/v3d/v3d_blit.c            |  2 +-
+ src/gallium/drivers/v3d/v3dx_state.c          |  8 +++-
+ src/gallium/drivers/vc4/vc4_blit.c            |  2 +-
+ src/gallium/drivers/vc4/vc4_state.c           |  8 +++-
+ src/gallium/drivers/virgl/virgl_context.c     | 10 ++++-
+ src/gallium/drivers/zink/zink_context.c       |  8 +++-
+ src/gallium/frontends/clover/core/kernel.cpp  |  4 +-
+ src/gallium/frontends/lavapipe/lvp_execute.c  |  4 +-
+ src/gallium/frontends/nine/nine_state.c       | 12 ++++--
+ src/gallium/frontends/xa/xa_composite.c       |  2 +-
+ src/gallium/frontends/xa/xa_context.c         |  3 +-
+ src/gallium/frontends/xa/xa_renderer.c        |  2 +-
+ src/gallium/frontends/xa/xa_yuv.c             |  2 +-
+ src/gallium/include/pipe/p_context.h          |  1 +
+ src/gallium/tests/graw/fs-test.c              |  2 +-
+ src/gallium/tests/graw/gs-test.c              |  2 +-
+ src/gallium/tests/graw/quad-sample.c          |  2 +-
+ src/gallium/tests/graw/quad-tex.c             |  2 +-
+ src/gallium/tests/graw/tex-srgb.c             |  4 +-
+ src/gallium/tests/graw/tex-swizzle.c          |  2 +-
+ src/gallium/tests/graw/vs-test.c              |  2 +-
+ src/gallium/tests/trivial/compute.c           |  4 +-
+ src/gallium/tests/trivial/quad-tex.c          |  2 +-
+ src/mesa/state_tracker/st_atom_texture.c      |  2 +-
+ src/mesa/state_tracker/st_cb_bitmap.c         |  4 +-
+ src/mesa/state_tracker/st_cb_drawpixels.c     |  6 +--
+ src/mesa/state_tracker/st_cb_readpixels.c     |  4 +-
+ src/mesa/state_tracker/st_cb_texture.c        | 11 +++---
+ 82 files changed, 379 insertions(+), 158 deletions(-)
+
+diff --git a/src/gallium/auxiliary/cso_cache/cso_context.c b/src/gallium/auxiliary/cso_cache/cso_context.c
+index 42b64b34c1d..f779b6df5ac 100644
+--- a/src/gallium/auxiliary/cso_cache/cso_context.c
++++ b/src/gallium/auxiliary/cso_cache/cso_context.c
+@@ -339,7 +339,7 @@ void cso_unbind_context(struct cso_context *ctx)
+                ctx->pipe->bind_sampler_states(ctx->pipe, sh, 0, maxsam, zeros);
+             }
+             if (maxview > 0) {
+-               ctx->pipe->set_sampler_views(ctx->pipe, sh, 0, maxview, 0, views);
++               ctx->pipe->set_sampler_views(ctx->pipe, sh, 0, maxview, 0, false, views);
+             }
+             if (maxssbo > 0) {
+                ctx->pipe->set_shader_buffers(ctx->pipe, sh, 0, maxssbo, ssbos, 0);
+diff --git a/src/gallium/auxiliary/draw/draw_pipe_pstipple.c b/src/gallium/auxiliary/draw/draw_pipe_pstipple.c
+index eb7ad8bf24f..d5f757eb136 100644
+--- a/src/gallium/auxiliary/draw/draw_pipe_pstipple.c
++++ b/src/gallium/auxiliary/draw/draw_pipe_pstipple.c
+@@ -109,6 +109,7 @@ struct pstip_stage
+                                     enum pipe_shader_type shader,
+                                     unsigned start, unsigned count,
+                                     unsigned unbind_num_trailing_slots,
++                                    bool take_ownership,
+                                     struct pipe_sampler_view **);
+ 
+    void (*driver_set_polygon_stipple)(struct pipe_context *,
+@@ -224,7 +225,8 @@ pstip_first_tri(struct draw_stage *stage, struct prim_header *header)
+                                      num_samplers, pstip->state.samplers);
+ 
+    pstip->driver_set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0,
+-                                   num_sampler_views, 0, pstip->state.sampler_views);
++                                   num_sampler_views, 0, false,
++                                   pstip->state.sampler_views);
+ 
+    draw->suspend_flushing = FALSE;
+ 
+@@ -253,7 +255,7 @@ pstip_flush(struct draw_stage *stage, unsigned flags)
+                                      pstip->state.samplers);
+ 
+    pstip->driver_set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0,
+-                                   pstip->num_sampler_views, 0,
++                                   pstip->num_sampler_views, 0, false,
+                                    pstip->state.sampler_views);
+ 
+    draw->suspend_flushing = FALSE;
+@@ -418,6 +420,7 @@ pstip_set_sampler_views(struct pipe_context *pipe,
+                         enum pipe_shader_type shader,
+                         unsigned start, unsigned num,
+                         unsigned unbind_num_trailing_slots,
++                        bool take_ownership,
+                         struct pipe_sampler_view **views)
+ {
+    struct pstip_stage *pstip = pstip_stage_from_pipe(pipe);
+@@ -438,7 +441,7 @@ pstip_set_sampler_views(struct pipe_context *pipe,
+ 
+    /* pass-through */
+    pstip->driver_set_sampler_views(pstip->pipe, shader, start, num,
+-                                   unbind_num_trailing_slots, views);
++                                   unbind_num_trailing_slots, take_ownership, views);
+ }
+ 
+ 
+diff --git a/src/gallium/auxiliary/driver_ddebug/dd_context.c b/src/gallium/auxiliary/driver_ddebug/dd_context.c
+index d24b2c55cc7..2b2d5929d7b 100644
+--- a/src/gallium/auxiliary/driver_ddebug/dd_context.c
++++ b/src/gallium/auxiliary/driver_ddebug/dd_context.c
+@@ -511,6 +511,7 @@ dd_context_set_sampler_views(struct pipe_context *_pipe,
+                              enum pipe_shader_type shader,
+                              unsigned start, unsigned num,
+                              unsigned unbind_num_trailing_slots,
++                             bool take_ownership,
+                              struct pipe_sampler_view **views)
+ {
+    struct dd_context *dctx = dd_context(_pipe);
+@@ -520,7 +521,7 @@ dd_context_set_sampler_views(struct pipe_context *_pipe,
+                sizeof(views[0]) * num);
+    safe_memcpy(&dctx->draw_state.sampler_views[shader][start + num], views,
+                sizeof(views[0]) * unbind_num_trailing_slots);
+-   pipe->set_sampler_views(pipe, shader, start, num,
++   pipe->set_sampler_views(pipe, shader, start, num, take_ownership,
+                            unbind_num_trailing_slots, views);
+ }
+ 
+diff --git a/src/gallium/auxiliary/driver_noop/noop_state.c b/src/gallium/auxiliary/driver_noop/noop_state.c
+index 6d4330b2684..6cd366666c0 100644
+--- a/src/gallium/auxiliary/driver_noop/noop_state.c
++++ b/src/gallium/auxiliary/driver_noop/noop_state.c
+@@ -116,6 +116,7 @@ static void noop_set_sampler_views(struct pipe_context *ctx,
+                                    enum pipe_shader_type shader,
+                                    unsigned start, unsigned count,
+                                    unsigned unbind_num_trailing_slots,
++                                   bool take_ownership,
+                                    struct pipe_sampler_view **views)
+ {
+ }
+diff --git a/src/gallium/auxiliary/driver_rbug/rbug_context.c b/src/gallium/auxiliary/driver_rbug/rbug_context.c
+index 40df61be758..b0c283d9b91 100644
+--- a/src/gallium/auxiliary/driver_rbug/rbug_context.c
++++ b/src/gallium/auxiliary/driver_rbug/rbug_context.c
+@@ -740,6 +740,7 @@ rbug_set_sampler_views(struct pipe_context *_pipe,
+                        unsigned start,
+                        unsigned num,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **_views)
+ {
+    struct rbug_context *rb_pipe = rbug_context(_pipe);
+@@ -769,7 +770,7 @@ rbug_set_sampler_views(struct pipe_context *_pipe,
+    }
+ 
+    pipe->set_sampler_views(pipe, shader, start, num,
+-                           unbind_num_trailing_slots, views);
++                           unbind_num_trailing_slots, take_ownership, views);
+ 
+    mtx_unlock(&rb_pipe->call_mutex);
+ }
+diff --git a/src/gallium/auxiliary/driver_trace/tr_context.c b/src/gallium/auxiliary/driver_trace/tr_context.c
+index f0666d97737..a03e72a642b 100644
+--- a/src/gallium/auxiliary/driver_trace/tr_context.c
++++ b/src/gallium/auxiliary/driver_trace/tr_context.c
+@@ -1112,6 +1112,7 @@ trace_context_set_sampler_views(struct pipe_context *_pipe,
+                                 unsigned start,
+                                 unsigned num,
+                                 unsigned unbind_num_trailing_slots,
++                                bool take_ownership,
+                                 struct pipe_sampler_view **views)
+ {
+    struct trace_context *tr_ctx = trace_context(_pipe);
+@@ -1136,10 +1137,11 @@ trace_context_set_sampler_views(struct pipe_context *_pipe,
+    trace_dump_arg(uint, start);
+    trace_dump_arg(uint, num);
+    trace_dump_arg(uint, unbind_num_trailing_slots);
++   trace_dump_arg(bool, take_ownership);
+    trace_dump_arg_array(ptr, views, num);
+ 
+    pipe->set_sampler_views(pipe, shader, start, num,
+-                           unbind_num_trailing_slots, views);
++                           unbind_num_trailing_slots, take_ownership, views);
+ 
+    trace_dump_call_end();
+ }
+diff --git a/src/gallium/auxiliary/hud/hud_context.c b/src/gallium/auxiliary/hud/hud_context.c
+index 5d6b5690b79..98fdfec95e1 100644
+--- a/src/gallium/auxiliary/hud/hud_context.c
++++ b/src/gallium/auxiliary/hud/hud_context.c
+@@ -541,7 +541,7 @@ hud_draw_results(struct hud_context *hud, struct pipe_resource *tex)
+    cso_set_vertex_shader_handle(cso, hud->vs_color);
+    cso_set_vertex_elements(cso, &hud->velems);
+    cso_set_render_condition(cso, NULL, FALSE, 0);
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0,
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false,
+                            &hud->font_sampler_view);
+    cso_set_samplers(cso, PIPE_SHADER_FRAGMENT, 1, sampler_states);
+    pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, false, &hud->constbuf);
+@@ -614,7 +614,7 @@ done:
+    /* Unbind resources that we have bound. */
+    pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, false, NULL);
+    pipe->set_vertex_buffers(pipe, 0, 0, 1, false, NULL);
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 1, NULL);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 1, false, NULL);
+ 
+    /* restore states not restored by cso */
+    if (hud->st) {
+diff --git a/src/gallium/auxiliary/postprocess/pp_colors.c b/src/gallium/auxiliary/postprocess/pp_colors.c
+index f319ebb2219..e7ce77758f5 100644
+--- a/src/gallium/auxiliary/postprocess/pp_colors.c
++++ b/src/gallium/auxiliary/postprocess/pp_colors.c
+@@ -47,7 +47,7 @@ pp_nocolor(struct pp_queue_t *ppq, struct pipe_resource *in,
+    pp_filter_misc_state(p);
+ 
+    cso_set_samplers(p->cso, PIPE_SHADER_FRAGMENT, 1, samplers);
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &p->view);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &p->view);
+ 
+    cso_set_vertex_shader_handle(p->cso, ppq->shaders[n][0]);
+    cso_set_fragment_shader_handle(p->cso, ppq->shaders[n][1]);
+diff --git a/src/gallium/auxiliary/postprocess/pp_mlaa.c b/src/gallium/auxiliary/postprocess/pp_mlaa.c
+index 2bc2ac873df..102e71f48b9 100644
+--- a/src/gallium/auxiliary/postprocess/pp_mlaa.c
++++ b/src/gallium/auxiliary/postprocess/pp_mlaa.c
+@@ -134,7 +134,7 @@ pp_jimenezmlaa_run(struct pp_queue_t *ppq, struct pipe_resource *in,
+       const struct pipe_sampler_state *samplers[] = {&p->sampler_point};
+       cso_set_samplers(p->cso, PIPE_SHADER_FRAGMENT, 1, samplers);
+    }
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &p->view);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &p->view);
+ 
+    cso_set_vertex_shader_handle(p->cso, ppq->shaders[n][1]);    /* offsetvs */
+    cso_set_fragment_shader_handle(p->cso, ppq->shaders[n][2]);
+@@ -166,7 +166,7 @@ pp_jimenezmlaa_run(struct pp_queue_t *ppq, struct pipe_resource *in,
+    }
+ 
+    arr[0] = p->view;
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 3, 0, arr);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 3, 0, false, arr);
+ 
+    cso_set_vertex_shader_handle(p->cso, ppq->shaders[n][0]);    /* passvs */
+    cso_set_fragment_shader_handle(p->cso, ppq->shaders[n][3]);
+@@ -198,7 +198,7 @@ pp_jimenezmlaa_run(struct pp_queue_t *ppq, struct pipe_resource *in,
+    }
+ 
+    arr[1] = p->view;
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 2, 0, arr);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 2, 0, false, arr);
+ 
+    cso_set_vertex_shader_handle(p->cso, ppq->shaders[n][1]);    /* offsetvs */
+    cso_set_fragment_shader_handle(p->cso, ppq->shaders[n][4]);
+diff --git a/src/gallium/auxiliary/postprocess/pp_run.c b/src/gallium/auxiliary/postprocess/pp_run.c
+index 3615f348cfd..a4e71251ac8 100644
+--- a/src/gallium/auxiliary/postprocess/pp_run.c
++++ b/src/gallium/auxiliary/postprocess/pp_run.c
+@@ -191,7 +191,7 @@ pp_run(struct pp_queue_t *ppq, struct pipe_resource *in,
+    pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, false, NULL);
+    pipe->set_constant_buffer(pipe, PIPE_SHADER_FRAGMENT, 0, false, NULL);
+    pipe->set_vertex_buffers(pipe, 0, 0, 1, false, NULL);
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 3, NULL);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 3, false, NULL);
+ 
+    /* restore states not restored by cso */
+    if (ppq->p->st) {
+diff --git a/src/gallium/auxiliary/util/u_blitter.c b/src/gallium/auxiliary/util/u_blitter.c
+index bb76c63acca..5a3f8aa119b 100644
+--- a/src/gallium/auxiliary/util/u_blitter.c
++++ b/src/gallium/auxiliary/util/u_blitter.c
+@@ -784,11 +784,12 @@ void util_blitter_restore_textures(struct blitter_context *blitter)
+ 
+    /* Fragment sampler views. */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0,
+-                           ctx->base.saved_num_sampler_views, 0,
++                           ctx->base.saved_num_sampler_views, 0, true,
+                            ctx->base.saved_sampler_views);
+ 
++   /* Just clear them to NULL because set_sampler_views(take_ownership = true). */
+    for (i = 0; i < ctx->base.saved_num_sampler_views; i++)
+-      pipe_sampler_view_reference(&ctx->base.saved_sampler_views[i], NULL);
++      ctx->base.saved_sampler_views[i] = NULL;
+ 
+    ctx->base.saved_num_sampler_views = ~0;
+ }
+@@ -2089,7 +2090,7 @@ void util_blitter_blit_generic(struct blitter_context *blitter,
+       views[0] = src;
+       views[1] = pipe->create_sampler_view(pipe, src->texture, &templ);
+ 
+-      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 2, 0, views);
++      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 2, 0, false, views);
+       pipe->bind_sampler_states(pipe, PIPE_SHADER_FRAGMENT, 0, 2, samplers);
+ 
+       pipe_sampler_view_reference(&views[1], NULL);
+@@ -2104,13 +2105,13 @@ void util_blitter_blit_generic(struct blitter_context *blitter,
+ 
+       view = pipe->create_sampler_view(pipe, src->texture, &templ);
+ 
+-      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &view);
++      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &view);
+       pipe->bind_sampler_states(pipe, PIPE_SHADER_FRAGMENT,
+                                 0, 1, &sampler_state);
+ 
+       pipe_sampler_view_reference(&view, NULL);
+    } else {
+-      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &src);
++      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &src);
+       pipe->bind_sampler_states(pipe, PIPE_SHADER_FRAGMENT,
+                                 0, 1, &sampler_state);
+    }
+@@ -2257,7 +2258,7 @@ void util_blitter_generate_mipmap(struct blitter_context *blitter,
+       src_templ.format = format;
+       src_view = pipe->create_sampler_view(pipe, tex, &src_templ);
+ 
+-      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &src_view);
++      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &src_view);
+ 
+       do_blits(ctx, dst_view, &dstbox, src_view, tex->width0, tex->height0,
+                &srcbox, is_depth, false);
+@@ -2889,7 +2890,7 @@ util_blitter_stencil_fallback(struct blitter_context *blitter,
+                                 true);
+    }
+ 
+-   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &src_view);
++   pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &src_view);
+    pipe->bind_sampler_states(pipe, PIPE_SHADER_FRAGMENT, 0, 1, &ctx->sampler_state);
+ 
+    unsigned stencil_bits =
+diff --git a/src/gallium/auxiliary/util/u_compute.c b/src/gallium/auxiliary/util/u_compute.c
+index 1eab36ab6b8..8d4d871b2ff 100644
+--- a/src/gallium/auxiliary/util/u_compute.c
++++ b/src/gallium/auxiliary/util/u_compute.c
+@@ -139,7 +139,7 @@ void util_compute_blit(struct pipe_context *ctx, struct pipe_blit_info *blit_inf
+    u_sampler_view_default_template(&src_templ, src, src->format);
+    src_templ.format = util_format_linear(blit_info->src.format);
+    src_view = ctx->create_sampler_view(ctx, src, &src_templ);
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_COMPUTE, 0, 1, 0, &src_view);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_COMPUTE, 0, 1, 0, false, &src_view);
+ 
+    if (!*compute_state)
+      *compute_state = blit_compute_shader(ctx);
+@@ -160,7 +160,7 @@ void util_compute_blit(struct pipe_context *ctx, struct pipe_blit_info *blit_inf
+ 
+    ctx->set_shader_images(ctx, PIPE_SHADER_COMPUTE, 0, 0, 1, NULL);
+    ctx->set_constant_buffer(ctx, PIPE_SHADER_COMPUTE, 0, false, NULL);
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_COMPUTE, 0, 0, 1, NULL);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_COMPUTE, 0, 0, 1, false, NULL);
+    pipe_sampler_view_reference(&src_view, NULL);
+    ctx->delete_sampler_state(ctx, sampler_state_p);
+    ctx->bind_compute_state(ctx, NULL);
+diff --git a/src/gallium/auxiliary/util/u_tests.c b/src/gallium/auxiliary/util/u_tests.c
+index aa381448b05..6a67f63e219 100644
+--- a/src/gallium/auxiliary/util/u_tests.c
++++ b/src/gallium/auxiliary/util/u_tests.c
+@@ -392,7 +392,7 @@ null_sampler_view(struct pipe_context *ctx, unsigned tgsi_tex_target)
+                               PIPE_FORMAT_R8G8B8A8_UNORM, 0);
+    util_set_common_states_and_clear(cso, ctx, cb);
+ 
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 0, 1, NULL);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 0, 1, false, NULL);
+ 
+    /* Fragment shader. */
+    fs = util_make_fragment_tex_shader(ctx, tgsi_tex_target,
+@@ -706,7 +706,7 @@ test_texture_barrier(struct pipe_context *ctx, bool use_fbfetch,
+       templ.swizzle_b = PIPE_SWIZZLE_Z;
+       templ.swizzle_a = PIPE_SWIZZLE_W;
+       view = ctx->create_sampler_view(ctx, cb, &templ);
+-      ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &view);
++      ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &view);
+ 
+       /* Fragment shader. */
+       if (num_samples > 1) {
+diff --git a/src/gallium/auxiliary/util/u_threaded_context.c b/src/gallium/auxiliary/util/u_threaded_context.c
+index 5994a6a3097..6615c453cfb 100644
+--- a/src/gallium/auxiliary/util/u_threaded_context.c
++++ b/src/gallium/auxiliary/util/u_threaded_context.c
+@@ -1322,13 +1322,9 @@ static uint16_t
+ tc_call_set_sampler_views(struct pipe_context *pipe, void *call, uint64_t *last)
+ {
+    struct tc_sampler_views *p = (struct tc_sampler_views *)call;
+-   unsigned count = p->count;
+ 
+    pipe->set_sampler_views(pipe, p->shader, p->start, p->count,
+-                           p->unbind_num_trailing_slots, p->slot);
+-   for (unsigned i = 0; i < count; i++)
+-      tc_drop_sampler_view_reference(p->slot[i]);
+-
++                           p->unbind_num_trailing_slots, true, p->slot);
+    return p->base.num_slots;
+ }
+ 
+@@ -1336,7 +1332,7 @@ static void
+ tc_set_sampler_views(struct pipe_context *_pipe,
+                      enum pipe_shader_type shader,
+                      unsigned start, unsigned count,
+-                     unsigned unbind_num_trailing_slots,
++                     unsigned unbind_num_trailing_slots, bool take_ownership,
+                      struct pipe_sampler_view **views)
+ {
+    if (!count && !unbind_num_trailing_slots)
+@@ -1356,15 +1352,28 @@ tc_set_sampler_views(struct pipe_context *_pipe,
+       p->count = count;
+       p->unbind_num_trailing_slots = unbind_num_trailing_slots;
+ 
+-      for (unsigned i = 0; i < count; i++) {
+-         p->slot[i] = NULL;
+-         pipe_sampler_view_reference(&p->slot[i], views[i]);
++      if (take_ownership) {
++         memcpy(p->slot, views, sizeof(*views) * count);
+ 
+-         if (views[i] && views[i]->target == PIPE_BUFFER) {
+-            tc_bind_buffer(&tc->sampler_buffers[shader][start + i], next,
+-                           views[i]->texture);
+-         } else {
+-            tc_unbind_buffer(&tc->sampler_buffers[shader][start + i]);
++         for (unsigned i = 0; i < count; i++) {
++            if (views[i] && views[i]->target == PIPE_BUFFER) {
++               tc_bind_buffer(&tc->sampler_buffers[shader][start + i], next,
++                              views[i]->texture);
++            } else {
++               tc_unbind_buffer(&tc->sampler_buffers[shader][start + i]);
++            }
++         }
++      } else {
++         for (unsigned i = 0; i < count; i++) {
++            p->slot[i] = NULL;
++            pipe_sampler_view_reference(&p->slot[i], views[i]);
++
++            if (views[i] && views[i]->target == PIPE_BUFFER) {
++               tc_bind_buffer(&tc->sampler_buffers[shader][start + i], next,
++                              views[i]->texture);
++            } else {
++               tc_unbind_buffer(&tc->sampler_buffers[shader][start + i]);
++            }
+          }
+       }
+ 
+diff --git a/src/gallium/auxiliary/vl/vl_bicubic_filter.c b/src/gallium/auxiliary/vl/vl_bicubic_filter.c
+index 674aa587d61..457f2cf68bd 100644
+--- a/src/gallium/auxiliary/vl/vl_bicubic_filter.c
++++ b/src/gallium/auxiliary/vl/vl_bicubic_filter.c
+@@ -456,7 +456,7 @@ vl_bicubic_filter_render(struct vl_bicubic_filter *filter,
+    filter->pipe->bind_sampler_states(filter->pipe, PIPE_SHADER_FRAGMENT,
+                                      0, 1, &filter->sampler);
+    filter->pipe->set_sampler_views(filter->pipe, PIPE_SHADER_FRAGMENT,
+-                                   0, 1, 0, &src);
++                                   0, 1, 0, false, &src);
+    filter->pipe->bind_vs_state(filter->pipe, filter->vs);
+    filter->pipe->bind_fs_state(filter->pipe, filter->fs);
+    filter->pipe->set_framebuffer_state(filter->pipe, &fb_state);
+diff --git a/src/gallium/auxiliary/vl/vl_compositor_cs.c b/src/gallium/auxiliary/vl/vl_compositor_cs.c
+index 813aa148918..ad2175213ef 100644
+--- a/src/gallium/auxiliary/vl/vl_compositor_cs.c
++++ b/src/gallium/auxiliary/vl/vl_compositor_cs.c
+@@ -727,7 +727,7 @@ draw_layers(struct vl_compositor       *c,
+          c->pipe->bind_sampler_states(c->pipe, PIPE_SHADER_COMPUTE, 0,
+                         num_sampler_views, layer->samplers);
+          c->pipe->set_sampler_views(c->pipe, PIPE_SHADER_COMPUTE, 0,
+-                        num_sampler_views, 0, samplers);
++                        num_sampler_views, 0, false, samplers);
+ 
+          cs_launch(c, layer->cs, &(drawn.area));
+ 
+@@ -735,7 +735,7 @@ draw_layers(struct vl_compositor       *c,
+          c->pipe->set_shader_images(c->pipe, PIPE_SHADER_COMPUTE, 0, 0, 1, NULL);
+          c->pipe->set_constant_buffer(c->pipe, PIPE_SHADER_COMPUTE, 0, false, NULL);
+          c->pipe->set_sampler_views(c->pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+-                        num_sampler_views, NULL);
++                        num_sampler_views, false, NULL);
+          c->pipe->bind_compute_state(c->pipe, NULL);
+          c->pipe->bind_sampler_states(c->pipe, PIPE_SHADER_COMPUTE, 0,
+                         num_sampler_views, NULL);
+diff --git a/src/gallium/auxiliary/vl/vl_compositor_gfx.c b/src/gallium/auxiliary/vl/vl_compositor_gfx.c
+index c4eba2293c9..24f5625b478 100644
+--- a/src/gallium/auxiliary/vl/vl_compositor_gfx.c
++++ b/src/gallium/auxiliary/vl/vl_compositor_gfx.c
+@@ -665,7 +665,7 @@ draw_layers(struct vl_compositor *c, struct vl_compositor_state *s, struct u_rec
+          c->pipe->bind_sampler_states(c->pipe, PIPE_SHADER_FRAGMENT, 0,
+                                       num_sampler_views, layer->samplers);
+          c->pipe->set_sampler_views(c->pipe, PIPE_SHADER_FRAGMENT, 0,
+-                                    num_sampler_views, 0, samplers);
++                                    num_sampler_views, 0, false, samplers);
+ 
+          util_draw_arrays(c->pipe, PIPE_PRIM_QUADS, vb_index * 4, 4);
+          vb_index++;
+diff --git a/src/gallium/auxiliary/vl/vl_deint_filter.c b/src/gallium/auxiliary/vl/vl_deint_filter.c
+index 950739b6ca7..fa6b5046e94 100644
+--- a/src/gallium/auxiliary/vl/vl_deint_filter.c
++++ b/src/gallium/auxiliary/vl/vl_deint_filter.c
+@@ -501,7 +501,8 @@ vl_deint_filter_render(struct vl_deint_filter *filter,
+       sampler_views[1] = prev_sv[k];
+       sampler_views[2] = cur_sv[k];
+       sampler_views[3] = next_sv[k];
+-      filter->pipe->set_sampler_views(filter->pipe, PIPE_SHADER_FRAGMENT, 0, 4, 0, sampler_views);
++      filter->pipe->set_sampler_views(filter->pipe, PIPE_SHADER_FRAGMENT,
++                                      0, 4, 0, false, sampler_views);
+ 
+       /* blit current field */
+       fb_state.cbufs[0] = blit_surf;
+diff --git a/src/gallium/auxiliary/vl/vl_idct.c b/src/gallium/auxiliary/vl/vl_idct.c
+index 93680309194..58fd5329d04 100644
+--- a/src/gallium/auxiliary/vl/vl_idct.c
++++ b/src/gallium/auxiliary/vl/vl_idct.c
+@@ -836,7 +836,7 @@ vl_idct_flush(struct vl_idct *idct, struct vl_idct_buffer *buffer, unsigned num_
+                                    0, 2, idct->samplers);
+ 
+    idct->pipe->set_sampler_views(idct->pipe, PIPE_SHADER_FRAGMENT, 0, 2, 0,
+-                                 buffer->sampler_views.stage[0]);
++                                 false, buffer->sampler_views.stage[0]);
+ 
+    /* mismatch control */
+    idct->pipe->set_framebuffer_state(idct->pipe, &buffer->fb_state_mismatch);
+@@ -863,6 +863,6 @@ vl_idct_prepare_stage2(struct vl_idct *idct, struct vl_idct_buffer *buffer)
+    idct->pipe->bind_sampler_states(idct->pipe, PIPE_SHADER_FRAGMENT,
+                                    0, 2, idct->samplers);
+    idct->pipe->set_sampler_views(idct->pipe, PIPE_SHADER_FRAGMENT,
+-                                 0, 2, 0, buffer->sampler_views.stage[1]);
++                                 0, 2, 0, false, buffer->sampler_views.stage[1]);
+ }
+ 
+diff --git a/src/gallium/auxiliary/vl/vl_matrix_filter.c b/src/gallium/auxiliary/vl/vl_matrix_filter.c
+index 6c912ea8645..f3e3bd5c63d 100644
+--- a/src/gallium/auxiliary/vl/vl_matrix_filter.c
++++ b/src/gallium/auxiliary/vl/vl_matrix_filter.c
+@@ -295,7 +295,7 @@ vl_matrix_filter_render(struct vl_matrix_filter *filter,
+    filter->pipe->bind_sampler_states(filter->pipe, PIPE_SHADER_FRAGMENT,
+                                      0, 1, &filter->sampler);
+    filter->pipe->set_sampler_views(filter->pipe, PIPE_SHADER_FRAGMENT,
+-                                   0, 1, 0, &src);
++                                   0, 1, 0, false, &src);
+    filter->pipe->bind_vs_state(filter->pipe, filter->vs);
+    filter->pipe->bind_fs_state(filter->pipe, filter->fs);
+    filter->pipe->set_framebuffer_state(filter->pipe, &fb_state);
+diff --git a/src/gallium/auxiliary/vl/vl_mc.c b/src/gallium/auxiliary/vl/vl_mc.c
+index 0b2a210cb10..d331da1d5fa 100644
+--- a/src/gallium/auxiliary/vl/vl_mc.c
++++ b/src/gallium/auxiliary/vl/vl_mc.c
+@@ -622,7 +622,7 @@ vl_mc_render_ref(struct vl_mc *renderer, struct vl_mc_buffer *buffer, struct pip
+    renderer->pipe->bind_fs_state(renderer->pipe, renderer->fs_ref);
+ 
+    renderer->pipe->set_sampler_views(renderer->pipe, PIPE_SHADER_FRAGMENT,
+-                                     0, 1, 0, &ref);
++                                     0, 1, 0, false, &ref);
+    renderer->pipe->bind_sampler_states(renderer->pipe, PIPE_SHADER_FRAGMENT,
+                                        0, 1, &renderer->sampler_ref);
+ 
+diff --git a/src/gallium/auxiliary/vl/vl_median_filter.c b/src/gallium/auxiliary/vl/vl_median_filter.c
+index 90ae4fcf926..ca935237b86 100644
+--- a/src/gallium/auxiliary/vl/vl_median_filter.c
++++ b/src/gallium/auxiliary/vl/vl_median_filter.c
+@@ -399,7 +399,7 @@ vl_median_filter_render(struct vl_median_filter *filter,
+    filter->pipe->bind_sampler_states(filter->pipe, PIPE_SHADER_FRAGMENT,
+                                      0, 1, &filter->sampler);
+    filter->pipe->set_sampler_views(filter->pipe, PIPE_SHADER_FRAGMENT,
+-                                   0, 1, 0, &src);
++                                   0, 1, 0, false, &src);
+    filter->pipe->bind_vs_state(filter->pipe, filter->vs);
+    filter->pipe->bind_fs_state(filter->pipe, filter->fs);
+    filter->pipe->set_framebuffer_state(filter->pipe, &fb_state);
+diff --git a/src/gallium/auxiliary/vl/vl_mpeg12_decoder.c b/src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
+index 149a017f8ae..8ce89351a1b 100644
+--- a/src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
++++ b/src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
+@@ -830,7 +830,7 @@ vl_mpeg12_end_frame(struct pipe_video_codec *decoder,
+             vl_idct_prepare_stage2(i ? &dec->idct_c : &dec->idct_y, &buf->idct[plane]);
+          else {
+             dec->context->set_sampler_views(dec->context,
+-                                            PIPE_SHADER_FRAGMENT, 0, 1, 0,
++                                            PIPE_SHADER_FRAGMENT, 0, 1, 0, false,
+                                             &mc_source_sv[plane]);
+             dec->context->bind_sampler_states(dec->context,
+                                               PIPE_SHADER_FRAGMENT,
+diff --git a/src/gallium/auxiliary/vl/vl_zscan.c b/src/gallium/auxiliary/vl/vl_zscan.c
+index 42ba13bd9a5..543c9340fd8 100644
+--- a/src/gallium/auxiliary/vl/vl_zscan.c
++++ b/src/gallium/auxiliary/vl/vl_zscan.c
+@@ -608,7 +608,7 @@ vl_zscan_render(struct vl_zscan *zscan, struct vl_zscan_buffer *buffer, unsigned
+    zscan->pipe->set_framebuffer_state(zscan->pipe, &buffer->fb_state);
+    zscan->pipe->set_viewport_states(zscan->pipe, 0, 1, &buffer->viewport);
+    zscan->pipe->set_sampler_views(zscan->pipe, PIPE_SHADER_FRAGMENT,
+-                                  0, 3, 0, &buffer->src);
++                                  0, 3, 0, false, &buffer->src);
+    zscan->pipe->bind_vs_state(zscan->pipe, zscan->vs);
+    zscan->pipe->bind_fs_state(zscan->pipe, zscan->fs);
+    util_draw_arrays_instanced(zscan->pipe, PIPE_PRIM_QUADS, 0, 4, 0, num_instances);
+diff --git a/src/gallium/drivers/asahi/agx_state.c b/src/gallium/drivers/asahi/agx_state.c
+index 6ac42140966..6a9027a0d67 100644
+--- a/src/gallium/drivers/asahi/agx_state.c
++++ b/src/gallium/drivers/asahi/agx_state.c
+@@ -496,6 +496,7 @@ agx_set_sampler_views(struct pipe_context *pctx,
+                       enum pipe_shader_type shader,
+                       unsigned start, unsigned count,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+    struct agx_context *ctx = agx_context(pctx);
+@@ -511,8 +512,14 @@ agx_set_sampler_views(struct pipe_context *pctx,
+       if (views[i])
+          new_nr = i + 1;
+ 
+-      pipe_sampler_view_reference((struct pipe_sampler_view **)
+-                                  &ctx->stage[shader].textures[i], views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &ctx->stage[shader].textures[i], NULL);
++         ctx->stage[shader].textures[i] = (struct agx_sampler_view *)views[i];
++      } else {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &ctx->stage[shader].textures[i], views[i]);
++      }
+    }
+ 
+    for (; i < ctx->stage[shader].texture_count; i++) {
+diff --git a/src/gallium/drivers/crocus/crocus_state.c b/src/gallium/drivers/crocus/crocus_state.c
+index 73ad5c2011c..ed99e77b7e5 100644
+--- a/src/gallium/drivers/crocus/crocus_state.c
++++ b/src/gallium/drivers/crocus/crocus_state.c
+@@ -3145,6 +3145,7 @@ crocus_set_sampler_views(struct pipe_context *ctx,
+                          enum pipe_shader_type p_stage,
+                          unsigned start, unsigned count,
+                          unsigned unbind_num_trailing_slots,
++                         bool take_ownership,
+                          struct pipe_sampler_view **views)
+ {
+    struct crocus_context *ice = (struct crocus_context *) ctx;
+@@ -3155,8 +3156,16 @@ crocus_set_sampler_views(struct pipe_context *ctx,
+ 
+    for (unsigned i = 0; i < count; i++) {
+       struct pipe_sampler_view *pview = views ? views[i] : NULL;
+-      pipe_sampler_view_reference((struct pipe_sampler_view **)
+-                                  &shs->textures[start + i], pview);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &shs->textures[start + i], NULL);
++         shs->textures[start + i] = (struct crocus_sampler_view *)pview;
++      } else {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &shs->textures[start + i], pview);
++      }
++
+       struct crocus_sampler_view *view = (void *) pview;
+       if (view) {
+          view->res->bind_history |= PIPE_BIND_SAMPLER_VIEW;
+diff --git a/src/gallium/drivers/d3d12/d3d12_blit.cpp b/src/gallium/drivers/d3d12/d3d12_blit.cpp
+index d130476ac51..d19c07c94d7 100644
+--- a/src/gallium/drivers/d3d12/d3d12_blit.cpp
++++ b/src/gallium/drivers/d3d12/d3d12_blit.cpp
+@@ -780,7 +780,7 @@ resolve_stencil_to_temp(struct d3d12_context *ctx,
+    void *sampler_state = get_sampler_state(ctx);
+ 
+    util_blit_save_state(ctx);
+-   pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &src_view);
++   pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &src_view);
+    pctx->bind_sampler_states(pctx, PIPE_SHADER_FRAGMENT, 0, 1, &sampler_state);
+    util_blitter_custom_shader(ctx->blitter, dst_surf,
+                               get_stencil_resolve_vs(ctx),
+diff --git a/src/gallium/drivers/d3d12/d3d12_context.cpp b/src/gallium/drivers/d3d12/d3d12_context.cpp
+index 6167f9be28b..73fa7b125c6 100644
+--- a/src/gallium/drivers/d3d12/d3d12_context.cpp
++++ b/src/gallium/drivers/d3d12/d3d12_context.cpp
+@@ -947,6 +947,7 @@ d3d12_set_sampler_views(struct pipe_context *pctx,
+                         unsigned start_slot,
+                         unsigned num_views,
+                         unsigned unbind_num_trailing_slots,
++                        bool take_ownership,
+                         struct pipe_sampler_view **views)
+ {
+    struct d3d12_context *ctx = d3d12_context(pctx);
+@@ -962,7 +963,12 @@ d3d12_set_sampler_views(struct pipe_context *pctx,
+       if (new_view)
+          d3d12_increment_sampler_view_bind_count(pctx, shader_type, new_view);
+ 
+-      pipe_sampler_view_reference(&old_view, views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&old_view, NULL);
++         old_view = views[i];
++      } else {
++         pipe_sampler_view_reference(&old_view, views[i]);
++      }
+ 
+       if (views[i]) {
+          dxil_wrap_sampler_state &wss = ctx->tex_wrap_states[shader_type][start_slot + i];
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_texture.c b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+index 6164ff9959d..3a646757b21 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_texture.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+@@ -240,7 +240,7 @@ etna_texture_handle_incompatible(struct pipe_context *pctx, struct pipe_resource
+ 
+ static void
+ set_sampler_views(struct etna_context *ctx, unsigned start, unsigned end,
+-                  unsigned nr, struct pipe_sampler_view **views)
++                  unsigned nr, bool take_ownership, struct pipe_sampler_view **views)
+ {
+    unsigned i, j;
+    uint32_t mask = 1 << start;
+@@ -249,7 +249,12 @@ set_sampler_views(struct etna_context *ctx, unsigned start, unsigned end,
+    for (i = start, j = 0; j < nr; i++, j++, mask <<= 1) {
+       struct pipe_sampler_view *view = views ? views[j] : NULL;
+ 
+-      pipe_sampler_view_reference(&ctx->sampler_view[i], view);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&ctx->sampler_view[i], NULL);
++         ctx->sampler_view[i] = view;
++      } else {
++         pipe_sampler_view_reference(&ctx->sampler_view[i], view);
++      }
+       if (view) {
+          ctx->active_sampler_views |= mask;
+          ctx->dirty_sampler_views |= mask;
+@@ -268,32 +273,35 @@ set_sampler_views(struct etna_context *ctx, unsigned start, unsigned end,
+ 
+ static inline void
+ etna_fragtex_set_sampler_views(struct etna_context *ctx, unsigned nr,
++                               bool take_ownership,
+                                struct pipe_sampler_view **views)
+ {
+    struct etna_screen *screen = ctx->screen;
+    unsigned start = 0;
+    unsigned end = start + screen->specs.fragment_sampler_count;
+ 
+-   set_sampler_views(ctx, start, end, nr, views);
++   set_sampler_views(ctx, start, end, nr, take_ownership, views);
+    ctx->num_fragment_sampler_views = nr;
+ }
+ 
+ 
+ static inline void
+ etna_vertex_set_sampler_views(struct etna_context *ctx, unsigned nr,
++                              bool take_ownership,
+                               struct pipe_sampler_view **views)
+ {
+    struct etna_screen *screen = ctx->screen;
+    unsigned start = screen->specs.vertex_sampler_offset;
+    unsigned end = start + screen->specs.vertex_sampler_count;
+ 
+-   set_sampler_views(ctx, start, end, nr, views);
++   set_sampler_views(ctx, start, end, nr, take_ownership, views);
+ }
+ 
+ static void
+ etna_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                        unsigned start_slot, unsigned num_views,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    struct etna_context *ctx = etna_context(pctx);
+@@ -303,10 +311,10 @@ etna_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+ 
+    switch (shader) {
+    case PIPE_SHADER_FRAGMENT:
+-      etna_fragtex_set_sampler_views(ctx, num_views, views);
++      etna_fragtex_set_sampler_views(ctx, num_views, take_ownership, views);
+       break;
+    case PIPE_SHADER_VERTEX:
+-      etna_vertex_set_sampler_views(ctx, num_views, views);
++      etna_vertex_set_sampler_views(ctx, num_views, take_ownership, views);
+       break;
+    default:;
+    }
+diff --git a/src/gallium/drivers/freedreno/a2xx/fd2_texture.c b/src/gallium/drivers/freedreno/a2xx/fd2_texture.c
+index 3048011b034..50b72e52cc1 100644
+--- a/src/gallium/drivers/freedreno/a2xx/fd2_texture.c
++++ b/src/gallium/drivers/freedreno/a2xx/fd2_texture.c
+@@ -204,6 +204,7 @@ static void
+ fd2_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views) in_dt
+ {
+    if (shader == PIPE_SHADER_FRAGMENT) {
+@@ -218,7 +219,7 @@ fd2_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+    }
+ 
+    fd_set_sampler_views(pctx, shader, start, nr, unbind_num_trailing_slots,
+-                        views);
++                        take_ownership, views);
+ }
+ 
+ /* map gallium sampler-id to hw const-idx.. adreno uses a flat address
+diff --git a/src/gallium/drivers/freedreno/a4xx/fd4_texture.c b/src/gallium/drivers/freedreno/a4xx/fd4_texture.c
+index a1ff744639d..49b350665dd 100644
+--- a/src/gallium/drivers/freedreno/a4xx/fd4_texture.c
++++ b/src/gallium/drivers/freedreno/a4xx/fd4_texture.c
+@@ -246,6 +246,7 @@ static void
+ fd4_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+    struct fd_context *ctx = fd_context(pctx);
+@@ -262,7 +263,7 @@ fd4_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+    }
+ 
+    fd_set_sampler_views(pctx, shader, start, nr, unbind_num_trailing_slots,
+-                        views);
++                        take_ownership, views);
+ 
+    if (shader == PIPE_SHADER_FRAGMENT) {
+       fd4_ctx->fastc_srgb = astc_srgb;
+diff --git a/src/gallium/drivers/freedreno/a5xx/fd5_texture.c b/src/gallium/drivers/freedreno/a5xx/fd5_texture.c
+index e1b4e463b90..ef30b0d8b0a 100644
+--- a/src/gallium/drivers/freedreno/a5xx/fd5_texture.c
++++ b/src/gallium/drivers/freedreno/a5xx/fd5_texture.c
+@@ -239,6 +239,7 @@ static void
+ fd5_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+    struct fd_context *ctx = fd_context(pctx);
+@@ -255,7 +256,7 @@ fd5_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+    }
+ 
+    fd_set_sampler_views(pctx, shader, start, nr, unbind_num_trailing_slots,
+-                        views);
++                        take_ownership, views);
+ 
+    if (shader == PIPE_SHADER_FRAGMENT) {
+       fd5_ctx->fastc_srgb = astc_srgb;
+diff --git a/src/gallium/drivers/freedreno/a6xx/fd6_texture.c b/src/gallium/drivers/freedreno/a6xx/fd6_texture.c
+index f1e89b9aa52..6b0a72490e1 100644
+--- a/src/gallium/drivers/freedreno/a6xx/fd6_texture.c
++++ b/src/gallium/drivers/freedreno/a6xx/fd6_texture.c
+@@ -178,12 +178,13 @@ static void
+ fd6_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views) in_dt
+ {
+    struct fd_context *ctx = fd_context(pctx);
+ 
+    fd_set_sampler_views(pctx, shader, start, nr, unbind_num_trailing_slots,
+-                        views);
++                        take_ownership, views);
+ 
+    if (!views)
+       return;
+diff --git a/src/gallium/drivers/freedreno/freedreno_texture.c b/src/gallium/drivers/freedreno/freedreno_texture.c
+index 2ed42cb3f00..9aa9cddce61 100644
+--- a/src/gallium/drivers/freedreno/freedreno_texture.c
++++ b/src/gallium/drivers/freedreno/freedreno_texture.c
+@@ -68,7 +68,7 @@ bind_sampler_states(struct fd_texture_stateobj *tex, unsigned start,
+ 
+ static void
+ set_sampler_views(struct fd_texture_stateobj *tex, unsigned start, unsigned nr,
+-                  unsigned unbind_num_trailing_slots,
++                  unsigned unbind_num_trailing_slots, bool take_ownership,
+                   struct pipe_sampler_view **views)
+ {
+    unsigned i;
+@@ -76,7 +76,14 @@ set_sampler_views(struct fd_texture_stateobj *tex, unsigned start, unsigned nr,
+    for (i = 0; i < nr; i++) {
+       struct pipe_sampler_view *view = views ? views[i] : NULL;
+       unsigned p = i + start;
+-      pipe_sampler_view_reference(&tex->textures[p], view);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference(&tex->textures[p], NULL);
++         tex->textures[p] = view;
++      } else {
++         pipe_sampler_view_reference(&tex->textures[p], view);
++      }
++
+       if (tex->textures[p]) {
+          fd_resource_set_usage(tex->textures[p]->texture, FD_DIRTY_TEX);
+          tex->valid_textures |= (1 << p);
+@@ -107,12 +114,13 @@ void
+ fd_set_sampler_views(struct pipe_context *pctx, enum pipe_shader_type shader,
+                      unsigned start, unsigned nr,
+                      unsigned unbind_num_trailing_slots,
++                     bool take_ownership,
+                      struct pipe_sampler_view **views) in_dt
+ {
+    struct fd_context *ctx = fd_context(pctx);
+ 
+    set_sampler_views(&ctx->tex[shader], start, nr, unbind_num_trailing_slots,
+-                     views);
++                     take_ownership, views);
+    fd_context_dirty_shader(ctx, shader, FD_DIRTY_SHADER_TEX);
+ }
+ 
+diff --git a/src/gallium/drivers/freedreno/freedreno_texture.h b/src/gallium/drivers/freedreno/freedreno_texture.h
+index 7cb523c907a..bc89454c772 100644
+--- a/src/gallium/drivers/freedreno/freedreno_texture.h
++++ b/src/gallium/drivers/freedreno/freedreno_texture.h
+@@ -36,6 +36,7 @@ void fd_sampler_states_bind(struct pipe_context *pctx,
+ void fd_set_sampler_views(struct pipe_context *pctx,
+                           enum pipe_shader_type shader, unsigned start,
+                           unsigned nr, unsigned unbind_num_trailing_slots,
++                          bool take_ownership,
+                           struct pipe_sampler_view **views);
+ 
+ void fd_texture_init(struct pipe_context *pctx);
+diff --git a/src/gallium/drivers/i915/i915_state.c b/src/gallium/drivers/i915/i915_state.c
+index fe34edd0f71..32681771c4e 100644
+--- a/src/gallium/drivers/i915/i915_state.c
++++ b/src/gallium/drivers/i915/i915_state.c
+@@ -714,6 +714,7 @@ static void
+ i915_set_sampler_views(struct pipe_context *pipe, enum pipe_shader_type shader,
+                        unsigned start, unsigned num,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    if (shader != PIPE_SHADER_FRAGMENT) {
+@@ -732,11 +733,23 @@ i915_set_sampler_views(struct pipe_context *pipe, enum pipe_shader_type shader,
+    /* Check for no-op */
+    if (views && num == i915->num_fragment_sampler_views &&
+        !memcmp(i915->fragment_sampler_views, views,
+-               num * sizeof(struct pipe_sampler_view *)))
++               num * sizeof(struct pipe_sampler_view *))) {
++      if (take_ownership) {
++         for (unsigned i = 0; i < num; i++) {
++            struct pipe_sampler_view *view = views[i];
++            pipe_sampler_view_reference(&view, NULL);
++         }
++      }
+       return;
++   }
+ 
+    for (i = 0; i < num; i++) {
+-      pipe_sampler_view_reference(&i915->fragment_sampler_views[i], views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&i915->fragment_sampler_views[i], NULL);
++         i915->fragment_sampler_views[i] = views[i];
++      } else {
++         pipe_sampler_view_reference(&i915->fragment_sampler_views[i], views[i]);
++      }
+    }
+ 
+    for (i = num; i < i915->num_fragment_sampler_views; i++)
+diff --git a/src/gallium/drivers/iris/iris_state.c b/src/gallium/drivers/iris/iris_state.c
+index 9dfd6775d99..631591b11af 100644
+--- a/src/gallium/drivers/iris/iris_state.c
++++ b/src/gallium/drivers/iris/iris_state.c
+@@ -2806,6 +2806,7 @@ iris_set_sampler_views(struct pipe_context *ctx,
+                        enum pipe_shader_type p_stage,
+                        unsigned start, unsigned count,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    struct iris_context *ice = (struct iris_context *) ctx;
+@@ -2818,8 +2819,15 @@ iris_set_sampler_views(struct pipe_context *ctx,
+ 
+    for (i = 0; i < count; i++) {
+       struct pipe_sampler_view *pview = views ? views[i] : NULL;
+-      pipe_sampler_view_reference((struct pipe_sampler_view **)
+-                                  &shs->textures[start + i], pview);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &shs->textures[start + i], NULL);
++         shs->textures[start + i] = (struct iris_sampler_view *)pview;
++      } else {
++         pipe_sampler_view_reference((struct pipe_sampler_view **)
++                                     &shs->textures[start + i], pview);
++      }
+       struct iris_sampler_view *view = (void *) pview;
+       if (view) {
+          view->res->bind_history |= PIPE_BIND_SAMPLER_VIEW;
+diff --git a/src/gallium/drivers/lima/lima_state.c b/src/gallium/drivers/lima/lima_state.c
+index fe6c4930164..eafe772554e 100644
+--- a/src/gallium/drivers/lima/lima_state.c
++++ b/src/gallium/drivers/lima/lima_state.c
+@@ -381,6 +381,7 @@ lima_set_sampler_views(struct pipe_context *pctx,
+                       enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+    struct lima_context *ctx = lima_context(pctx);
+@@ -393,7 +394,13 @@ lima_set_sampler_views(struct pipe_context *pctx,
+    for (i = 0; i < nr; i++) {
+       if (views[i])
+          new_nr = i + 1;
+-      pipe_sampler_view_reference(&lima_tex->textures[i], views[i]);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference(&lima_tex->textures[i], NULL);
++         lima_tex->textures[i] = views[i];
++      } else {
++         pipe_sampler_view_reference(&lima_tex->textures[i], views[i]);
++      }
+    }
+ 
+    for (; i < lima_tex->num_textures; i++) {
+diff --git a/src/gallium/drivers/llvmpipe/lp_state_sampler.c b/src/gallium/drivers/llvmpipe/lp_state_sampler.c
+index 5332bb049c2..aa47cab3ab6 100644
+--- a/src/gallium/drivers/llvmpipe/lp_state_sampler.c
++++ b/src/gallium/drivers/llvmpipe/lp_state_sampler.c
+@@ -120,6 +120,7 @@ llvmpipe_set_sampler_views(struct pipe_context *pipe,
+                            unsigned start,
+                            unsigned num,
+                            unsigned unbind_num_trailing_slots,
++                           bool take_ownership,
+                            struct pipe_sampler_view **views)
+ {
+    struct llvmpipe_context *llvmpipe = llvmpipe_context(pipe);
+@@ -150,8 +151,15 @@ llvmpipe_set_sampler_views(struct pipe_context *pipe,
+ 
+       if (view)
+          llvmpipe_flush_resource(pipe, view->texture, 0, true, false, false, "sampler_view");
+-      pipe_sampler_view_reference(&llvmpipe->sampler_views[shader][start + i],
+-                                  view);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference(&llvmpipe->sampler_views[shader][start + i],
++                                     NULL);
++         llvmpipe->sampler_views[shader][start + i] = view;
++      } else {
++         pipe_sampler_view_reference(&llvmpipe->sampler_views[shader][start + i],
++                                     view);
++      }
+    }
+ 
+    for (; i < num + unbind_num_trailing_slots; i++) {
+diff --git a/src/gallium/drivers/nouveau/nv30/nv30_context.h b/src/gallium/drivers/nouveau/nv30/nv30_context.h
+index 95fc68fb8ac..7ea5c5b87af 100644
+--- a/src/gallium/drivers/nouveau/nv30/nv30_context.h
++++ b/src/gallium/drivers/nouveau/nv30/nv30_context.h
+@@ -188,11 +188,13 @@ nv40_verttex_sampler_states_bind(struct pipe_context *pipe,
+ 
+ void
+ nv40_verttex_set_sampler_views(struct pipe_context *pipe, unsigned nr,
++                               bool take_ownership,
+                                struct pipe_sampler_view **views);
+ 
+ void
+ nv30_fragtex_set_sampler_views(struct pipe_context *pipe,
+-                               unsigned nr, struct pipe_sampler_view **views);
++                               unsigned nr, bool take_ownership,
++                               struct pipe_sampler_view **views);
+ 
+ void
+ nv30_push_vbo(struct nv30_context *nv30, const struct pipe_draw_info *info,
+diff --git a/src/gallium/drivers/nouveau/nv30/nv30_fragtex.c b/src/gallium/drivers/nouveau/nv30/nv30_fragtex.c
+index bfd3cf2b486..1a06eac4746 100644
+--- a/src/gallium/drivers/nouveau/nv30/nv30_fragtex.c
++++ b/src/gallium/drivers/nouveau/nv30/nv30_fragtex.c
+@@ -173,6 +173,7 @@ nv30_fragtex_sampler_states_bind(struct pipe_context *pipe,
+ 
+ void
+ nv30_fragtex_set_sampler_views(struct pipe_context *pipe, unsigned nr,
++                               bool take_ownership,
+                                struct pipe_sampler_view **views)
+ {
+    struct nv30_context *nv30 = nv30_context(pipe);
+@@ -180,7 +181,12 @@ nv30_fragtex_set_sampler_views(struct pipe_context *pipe, unsigned nr,
+ 
+    for (i = 0; i < nr; i++) {
+       nouveau_bufctx_reset(nv30->bufctx, BUFCTX_FRAGTEX(i));
+-      pipe_sampler_view_reference(&nv30->fragprog.textures[i], views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&nv30->fragprog.textures[i], NULL);
++         nv30->fragprog.textures[i] = views[i];
++      } else {
++         pipe_sampler_view_reference(&nv30->fragprog.textures[i], views[i]);
++      }
+       nv30->fragprog.dirty_samplers |= (1 << i);
+    }
+ 
+@@ -199,15 +205,16 @@ static void
+ nv30_set_sampler_views(struct pipe_context *pipe, enum pipe_shader_type shader,
+                        unsigned start, unsigned nr,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    assert(start == 0);
+    switch (shader) {
+    case PIPE_SHADER_FRAGMENT:
+-      nv30_fragtex_set_sampler_views(pipe, nr, views);
++      nv30_fragtex_set_sampler_views(pipe, nr, take_ownership, views);
+       break;
+    case PIPE_SHADER_VERTEX:
+-      nv40_verttex_set_sampler_views(pipe, nr, views);
++      nv40_verttex_set_sampler_views(pipe, nr, take_ownership, views);
+       break;
+    default:
+       ;
+diff --git a/src/gallium/drivers/nouveau/nv30/nv40_verttex.c b/src/gallium/drivers/nouveau/nv30/nv40_verttex.c
+index 48b8c5a5ff2..578695a22ab 100644
+--- a/src/gallium/drivers/nouveau/nv30/nv40_verttex.c
++++ b/src/gallium/drivers/nouveau/nv30/nv40_verttex.c
+@@ -72,6 +72,7 @@ nv40_verttex_sampler_states_bind(struct pipe_context *pipe,
+ 
+ void
+ nv40_verttex_set_sampler_views(struct pipe_context *pipe, unsigned nr,
++                               bool take_ownership,
+                                struct pipe_sampler_view **views)
+ {
+    struct nv30_context *nv30 = nv30_context(pipe);
+@@ -79,7 +80,12 @@ nv40_verttex_set_sampler_views(struct pipe_context *pipe, unsigned nr,
+ 
+    for (i = 0; i < nr; i++) {
+       nouveau_bufctx_reset(nv30->bufctx, BUFCTX_VERTTEX(i));
+-      pipe_sampler_view_reference(&nv30->vertprog.textures[i], views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&nv30->vertprog.textures[i], NULL);
++         nv30->vertprog.textures[i] = views[i];
++      } else {
++         pipe_sampler_view_reference(&nv30->vertprog.textures[i], views[i]);
++      }
+       nv30->vertprog.dirty_samplers |= (1 << i);
+    }
+ 
+diff --git a/src/gallium/drivers/nouveau/nv50/nv50_state.c b/src/gallium/drivers/nouveau/nv50/nv50_state.c
+index 0eafe86d387..3ad9e41fdbb 100644
+--- a/src/gallium/drivers/nouveau/nv50/nv50_state.c
++++ b/src/gallium/drivers/nouveau/nv50/nv50_state.c
+@@ -661,7 +661,7 @@ nv50_sampler_view_destroy(struct pipe_context *pipe,
+ 
+ static inline void
+ nv50_stage_set_sampler_views(struct nv50_context *nv50, int s,
+-                             unsigned nr,
++                             unsigned nr, bool take_ownership,
+                              struct pipe_sampler_view **views)
+ {
+    unsigned i;
+@@ -684,7 +684,12 @@ nv50_stage_set_sampler_views(struct nv50_context *nv50, int s,
+          nv50->textures_coherent[s] &= ~(1 << i);
+       }
+ 
+-      pipe_sampler_view_reference(&nv50->textures[s][i], view);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&nv50->textures[s][i], NULL);
++         nv50->textures[s][i] = view;
++      } else {
++         pipe_sampler_view_reference(&nv50->textures[s][i], view);
++      }
+    }
+ 
+    assert(nv50->num_textures[s] <= PIPE_MAX_SAMPLERS);
+@@ -704,13 +709,14 @@ static void
+ nv50_set_sampler_views(struct pipe_context *pipe, enum pipe_shader_type shader,
+                        unsigned start, unsigned nr,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    struct nv50_context *nv50 = nv50_context(pipe);
+    unsigned s = nv50_context_shader_stage(shader);
+ 
+    assert(start == 0);
+-   nv50_stage_set_sampler_views(nv50, s, nr, views);
++   nv50_stage_set_sampler_views(nv50, s, nr, take_ownership, views);
+ 
+    if (unlikely(s == NV50_SHADER_STAGE_COMPUTE)) {
+       nouveau_bufctx_reset(nv50->bufctx_cp, NV50_BIND_CP_TEXTURES);
+diff --git a/src/gallium/drivers/nouveau/nvc0/nvc0_state.c b/src/gallium/drivers/nouveau/nvc0/nvc0_state.c
+index 9676016c5b7..e0b43ec1623 100644
+--- a/src/gallium/drivers/nouveau/nvc0/nvc0_state.c
++++ b/src/gallium/drivers/nouveau/nvc0/nvc0_state.c
+@@ -516,7 +516,7 @@ nvc0_sampler_view_destroy(struct pipe_context *pipe,
+ 
+ static inline void
+ nvc0_stage_set_sampler_views(struct nvc0_context *nvc0, int s,
+-                             unsigned nr,
++                             unsigned nr, bool take_ownership,
+                              struct pipe_sampler_view **views)
+ {
+    unsigned i;
+@@ -525,8 +525,11 @@ nvc0_stage_set_sampler_views(struct nvc0_context *nvc0, int s,
+       struct pipe_sampler_view *view = views ? views[i] : NULL;
+       struct nv50_tic_entry *old = nv50_tic_entry(nvc0->textures[s][i]);
+ 
+-      if (view == nvc0->textures[s][i])
++      if (view == nvc0->textures[s][i]) {
++         if (take_ownership)
++            pipe_sampler_view_reference(&view, NULL);
+          continue;
++      }
+       nvc0->textures_dirty[s] |= 1 << i;
+ 
+       if (view && view->texture) {
+@@ -548,7 +551,12 @@ nvc0_stage_set_sampler_views(struct nvc0_context *nvc0, int s,
+          nvc0_screen_tic_unlock(nvc0->screen, old);
+       }
+ 
+-      pipe_sampler_view_reference(&nvc0->textures[s][i], view);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&nvc0->textures[s][i], NULL);
++         nvc0->textures[s][i] = view;
++      } else {
++         pipe_sampler_view_reference(&nvc0->textures[s][i], view);
++      }
+    }
+ 
+    for (i = nr; i < nvc0->num_textures[s]; ++i) {
+@@ -570,12 +578,13 @@ static void
+ nvc0_set_sampler_views(struct pipe_context *pipe, enum pipe_shader_type shader,
+                        unsigned start, unsigned nr,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    const unsigned s = nvc0_shader_stage(shader);
+ 
+    assert(start == 0);
+-   nvc0_stage_set_sampler_views(nvc0_context(pipe), s, nr, views);
++   nvc0_stage_set_sampler_views(nvc0_context(pipe), s, nr, take_ownership, views);
+ 
+    if (s == 5)
+       nvc0_context(pipe)->dirty_cp |= NVC0_NEW_CP_TEXTURES;
+diff --git a/src/gallium/drivers/panfrost/pan_context.c b/src/gallium/drivers/panfrost/pan_context.c
+index 36c895aad55..36f753a1e84 100644
+--- a/src/gallium/drivers/panfrost/pan_context.c
++++ b/src/gallium/drivers/panfrost/pan_context.c
+@@ -618,6 +618,7 @@ panfrost_set_sampler_views(
+         enum pipe_shader_type shader,
+         unsigned start_slot, unsigned num_views,
+         unsigned unbind_num_trailing_slots,
++        bool take_ownership,
+         struct pipe_sampler_view **views)
+ {
+         struct panfrost_context *ctx = pan_context(pctx);
+@@ -634,8 +635,14 @@ panfrost_set_sampler_views(
+         for (i = 0; i < num_views; ++i) {
+                 if (views[i])
+                         new_nr = i + 1;
+-		pipe_sampler_view_reference((struct pipe_sampler_view **)&ctx->sampler_views[shader][i],
+-		                            views[i]);
++                if (take_ownership) {
++                        pipe_sampler_view_reference((struct pipe_sampler_view **)&ctx->sampler_views[shader][i],
++                                                    NULL);
++                        ctx->sampler_views[shader][i] = (struct panfrost_sampler_view *)views[i];
++                } else {
++                        pipe_sampler_view_reference((struct pipe_sampler_view **)&ctx->sampler_views[shader][i],
++                                                    views[i]);
++                }
+         }
+ 
+         for (; i < ctx->sampler_view_count[shader]; i++) {
+diff --git a/src/gallium/drivers/r300/r300_state.c b/src/gallium/drivers/r300/r300_state.c
+index 3501c0b8616..747d6f90eb2 100644
+--- a/src/gallium/drivers/r300/r300_state.c
++++ b/src/gallium/drivers/r300/r300_state.c
+@@ -1519,6 +1519,7 @@ static void r300_set_sampler_views(struct pipe_context* pipe,
+                                    enum pipe_shader_type shader,
+                                    unsigned start, unsigned count,
+                                    unsigned unbind_num_trailing_slots,
++                                   bool take_ownership,
+                                    struct pipe_sampler_view** views)
+ {
+     struct r300_context* r300 = r300_context(pipe);
+@@ -1529,13 +1530,16 @@ static void r300_set_sampler_views(struct pipe_context* pipe,
+     unsigned tex_units = r300->screen->caps.num_tex_units;
+     boolean dirty_tex = FALSE;
+ 
+-    if (shader != PIPE_SHADER_FRAGMENT)
+-       return;
+-
+     assert(start == 0);  /* non-zero not handled yet */
+ 
+-    if (count > tex_units) {
+-        return;
++    if (shader != PIPE_SHADER_FRAGMENT || count > tex_units) {
++       if (take_ownership) {
++          for (unsigned i = 0; i < count; i++) {
++             struct pipe_sampler_view *view = views[i];
++             pipe_sampler_view_reference(&view, NULL);
++          }
++       }
++       return;
+     }
+ 
+     /* Calculate the real number of views. */
+@@ -1545,9 +1549,15 @@ static void r300_set_sampler_views(struct pipe_context* pipe,
+     }
+ 
+     for (i = 0; i < count; i++) {
+-        pipe_sampler_view_reference(
+-                (struct pipe_sampler_view**)&state->sampler_views[i],
+-                views[i]);
++        if (take_ownership) {
++            pipe_sampler_view_reference(
++                    (struct pipe_sampler_view**)&state->sampler_views[i], NULL);
++            state->sampler_views[i] = (struct r300_sampler_view*)views[i];
++        } else {
++            pipe_sampler_view_reference(
++                    (struct pipe_sampler_view**)&state->sampler_views[i],
++                    views[i]);
++        }
+ 
+         if (!views[i]) {
+             continue;
+diff --git a/src/gallium/drivers/r600/r600_state_common.c b/src/gallium/drivers/r600/r600_state_common.c
+index 0a70d2d9673..b8c446820ee 100644
+--- a/src/gallium/drivers/r600/r600_state_common.c
++++ b/src/gallium/drivers/r600/r600_state_common.c
+@@ -641,6 +641,7 @@ static void r600_set_sampler_views(struct pipe_context *pipe,
+ 				   enum pipe_shader_type shader,
+ 				   unsigned start, unsigned count,
+ 				   unsigned unbind_num_trailing_slots,
++				   bool take_ownership,
+ 				   struct pipe_sampler_view **views)
+ {
+ 	struct r600_context *rctx = (struct r600_context *) pipe;
+@@ -674,6 +675,10 @@ static void r600_set_sampler_views(struct pipe_context *pipe,
+ 
+ 	for (i = 0; i < count; i++) {
+ 		if (rviews[i] == dst->views.views[i]) {
++			if (take_ownership) {
++				struct pipe_sampler_view *view = views[i];
++				pipe_sampler_view_reference(&view, NULL);
++			}
+ 			continue;
+ 		}
+ 
+@@ -704,7 +709,12 @@ static void r600_set_sampler_views(struct pipe_context *pipe,
+ 				dirty_sampler_states_mask |= 1 << i;
+ 			}
+ 
+-			pipe_sampler_view_reference((struct pipe_sampler_view **)&dst->views.views[i], views[i]);
++			if (take_ownership) {
++				pipe_sampler_view_reference((struct pipe_sampler_view **)&dst->views.views[i], NULL);
++				dst->views.views[i] = (struct r600_pipe_sampler_view*)views[i];
++			} else {
++				pipe_sampler_view_reference((struct pipe_sampler_view **)&dst->views.views[i], views[i]);
++			}
+ 			new_mask |= 1 << i;
+ 			r600_context_add_resource_size(pipe, views[i]->texture);
+ 		} else {
+diff --git a/src/gallium/drivers/radeonsi/si_descriptors.c b/src/gallium/drivers/radeonsi/si_descriptors.c
+index 2391a9355b5..ebf555d74e0 100644
+--- a/src/gallium/drivers/radeonsi/si_descriptors.c
++++ b/src/gallium/drivers/radeonsi/si_descriptors.c
+@@ -505,7 +505,7 @@ static void si_reset_sampler_view_slot(struct si_samplers *samplers, unsigned sl
+ static void si_set_sampler_views(struct si_context *sctx, unsigned shader,
+                                 unsigned start_slot, unsigned count,
+                                 unsigned unbind_num_trailing_slots,
+-                                struct pipe_sampler_view **views,
++                                bool take_ownership, struct pipe_sampler_view **views,
+                                 bool disallow_early_out)
+ {
+    struct si_samplers *samplers = &sctx->samplers[shader];
+@@ -520,8 +520,13 @@ static void si_set_sampler_views(struct si_context *sctx, unsigned shader,
+          /* restrict decreases overhead of si_set_sampler_view_desc ~8x. */
+          uint32_t *restrict desc = descs->list + desc_slot * 16;
+ 
+-         if (samplers->views[slot] == &sview->base && !disallow_early_out)
++         if (samplers->views[slot] == &sview->base && !disallow_early_out) {
++            if (take_ownership) {
++               struct pipe_sampler_view *view = views[i];
++               pipe_sampler_view_reference(&view, NULL);
++            }
+             continue;
++         }
+ 
+          if (sview) {
+             struct si_texture *tex = (struct si_texture *)sview->base.texture;
+@@ -549,7 +554,12 @@ static void si_set_sampler_views(struct si_context *sctx, unsigned shader,
+                   sctx->need_check_render_feedback = true;
+             }
+ 
+-            pipe_sampler_view_reference(&samplers->views[slot], &sview->base);
++            if (take_ownership) {
++               pipe_sampler_view_reference(&samplers->views[slot], NULL);
++               samplers->views[slot] = &sview->base;
++            } else {
++               pipe_sampler_view_reference(&samplers->views[slot], &sview->base);
++            }
+             samplers->enabled_mask |= 1u << slot;
+ 
+             /* Since this can flush, it must be done after enabled_mask is
+@@ -598,7 +608,7 @@ static void si_update_shader_needs_decompress_mask(struct si_context *sctx, unsi
+ static void si_pipe_set_sampler_views(struct pipe_context *ctx, enum pipe_shader_type shader,
+                                       unsigned start, unsigned count,
+                                       unsigned unbind_num_trailing_slots,
+-                                      struct pipe_sampler_view **views)
++                                      bool take_ownership, struct pipe_sampler_view **views)
+ {
+    struct si_context *sctx = (struct si_context *)ctx;
+ 
+@@ -606,7 +616,7 @@ static void si_pipe_set_sampler_views(struct pipe_context *ctx, enum pipe_shader
+       return;
+ 
+    si_set_sampler_views(sctx, shader, start, count, unbind_num_trailing_slots,
+-                        views, false);
++                        take_ownership, views, false);
+    si_update_shader_needs_decompress_mask(sctx, shader);
+ }
+ 
+@@ -1891,7 +1901,7 @@ void si_update_all_texture_descriptors(struct si_context *sctx)
+          if (!view || !view->texture || view->texture->target == PIPE_BUFFER)
+             continue;
+ 
+-         si_set_sampler_views(sctx, shader, i, 1, 0, &samplers->views[i], true);
++         si_set_sampler_views(sctx, shader, i, 1, 0, false, &samplers->views[i], true);
+       }
+ 
+       si_update_shader_needs_decompress_mask(sctx, shader);
+diff --git a/src/gallium/drivers/softpipe/sp_state.h b/src/gallium/drivers/softpipe/sp_state.h
+index 7196cdff118..dcb89ef252e 100644
+--- a/src/gallium/drivers/softpipe/sp_state.h
++++ b/src/gallium/drivers/softpipe/sp_state.h
+@@ -176,6 +176,7 @@ softpipe_set_sampler_views(struct pipe_context *pipe,
+                            unsigned start,
+                            unsigned num,
+                            unsigned unbind_num_trailing_slots,
++                           bool take_ownership,
+                            struct pipe_sampler_view **views);
+ 
+ 
+diff --git a/src/gallium/drivers/softpipe/sp_state_derived.c b/src/gallium/drivers/softpipe/sp_state_derived.c
+index d120abf0f0e..a5e97869f80 100644
+--- a/src/gallium/drivers/softpipe/sp_state_derived.c
++++ b/src/gallium/drivers/softpipe/sp_state_derived.c
+@@ -420,7 +420,7 @@ update_polygon_stipple_enable(struct softpipe_context *softpipe, unsigned prim)
+ 
+       /* sampler view state */
+       softpipe_set_sampler_views(&softpipe->pipe, PIPE_SHADER_FRAGMENT,
+-                                 unit, 1, 0, &softpipe->pstipple.sampler_view);
++                                 unit, 1, 0, false, &softpipe->pstipple.sampler_view);
+ 
+       softpipe->dirty |= SP_NEW_SAMPLER;
+    }
+diff --git a/src/gallium/drivers/softpipe/sp_state_sampler.c b/src/gallium/drivers/softpipe/sp_state_sampler.c
+index 16db953b163..c20de39a881 100644
+--- a/src/gallium/drivers/softpipe/sp_state_sampler.c
++++ b/src/gallium/drivers/softpipe/sp_state_sampler.c
+@@ -101,6 +101,7 @@ softpipe_set_sampler_views(struct pipe_context *pipe,
+                            unsigned start,
+                            unsigned num,
+                            unsigned unbind_num_trailing_slots,
++                           bool take_ownership,
+                            struct pipe_sampler_view **views)
+ {
+    struct softpipe_context *softpipe = softpipe_context(pipe);
+@@ -117,7 +118,13 @@ softpipe_set_sampler_views(struct pipe_context *pipe,
+       struct sp_sampler_view *sp_sviewdst =
+          &softpipe->tgsi.sampler[shader]->sp_sview[start + i];
+       struct pipe_sampler_view **pview = &softpipe->sampler_views[shader][start + i];
+-      pipe_sampler_view_reference(pview, views[i]);
++
++      if (take_ownership) {
++         pipe_sampler_view_reference(pview, NULL);
++         *pview = views[i];
++      } else {
++         pipe_sampler_view_reference(pview, views[i]);
++      }
+       sp_tex_tile_cache_set_sampler_view(softpipe->tex_cache[shader][start + i],
+                                          views[i]);
+       /*
+diff --git a/src/gallium/drivers/svga/svga_pipe_sampler.c b/src/gallium/drivers/svga/svga_pipe_sampler.c
+index eb23b7b725a..ad1040c9d6d 100644
+--- a/src/gallium/drivers/svga/svga_pipe_sampler.c
++++ b/src/gallium/drivers/svga/svga_pipe_sampler.c
+@@ -415,6 +415,7 @@ svga_set_sampler_views(struct pipe_context *pipe,
+                        unsigned start,
+                        unsigned num,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    struct svga_context *svga = svga_context(pipe);
+@@ -427,8 +428,13 @@ svga_set_sampler_views(struct pipe_context *pipe,
+    assert(start + num <= ARRAY_SIZE(svga->curr.sampler_views[shader]));
+ 
+    /* Pre-VGPU10 only supports FS textures */
+-   if (!svga_have_vgpu10(svga) && shader != PIPE_SHADER_FRAGMENT)
++   if (!svga_have_vgpu10(svga) && shader != PIPE_SHADER_FRAGMENT) {
++      for (unsigned i = 0; i < num; i++) {
++         struct pipe_sampler_view *view = views[i];
++         pipe_sampler_view_reference(&view, NULL);
++      }
+       return;
++   }
+ 
+    SVGA_STATS_TIME_PUSH(svga_sws(svga), SVGA_STATS_TIME_SETSAMPLERVIEWS);
+ 
+@@ -448,10 +454,15 @@ svga_set_sampler_views(struct pipe_context *pipe,
+    for (i = 0; i < num; i++) {
+       enum pipe_texture_target target;
+ 
+-      if (svga->curr.sampler_views[shader][start + i] != views[i]) {
++      any_change |= svga->curr.sampler_views[shader][start + i] != views[i];
++
++      if (take_ownership) {
++         pipe_sampler_view_reference(&svga->curr.sampler_views[shader][start + i],
++               NULL);
++         svga->curr.sampler_views[shader][start + i] = views[i];
++      } else if (svga->curr.sampler_views[shader][start + i] != views[i]) {
+          pipe_sampler_view_reference(&svga->curr.sampler_views[shader][start + i],
+                                      views[i]);
+-         any_change = TRUE;
+       }
+ 
+       if (!views[i])
+diff --git a/src/gallium/drivers/swr/swr_state.cpp b/src/gallium/drivers/swr/swr_state.cpp
+index 6a56e227417..e4be42a8215 100644
+--- a/src/gallium/drivers/swr/swr_state.cpp
++++ b/src/gallium/drivers/swr/swr_state.cpp
+@@ -301,6 +301,7 @@ swr_set_sampler_views(struct pipe_context *pipe,
+                       unsigned start,
+                       unsigned num,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+    struct swr_context *ctx = swr_context(pipe);
+@@ -314,8 +315,14 @@ swr_set_sampler_views(struct pipe_context *pipe,
+    /* set the new sampler views */
+    ctx->num_sampler_views[shader] = num;
+    for (i = 0; i < num; i++) {
+-      pipe_sampler_view_reference(&ctx->sampler_views[shader][start + i],
+-                                  views[i]);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&ctx->sampler_views[shader][start + i],
++                                     NULL);
++         ctx->sampler_views[shader][start + i] = views[i];
++      } else {
++         pipe_sampler_view_reference(&ctx->sampler_views[shader][start + i],
++                                     views[i]);
++      }
+    }
+    for (; i < num + unbind_num_trailing_slots; i++) {
+       pipe_sampler_view_reference(&ctx->sampler_views[shader][start + i],
+diff --git a/src/gallium/drivers/tegra/tegra_context.c b/src/gallium/drivers/tegra/tegra_context.c
+index b7dc73bb1be..a07c740dc0b 100644
+--- a/src/gallium/drivers/tegra/tegra_context.c
++++ b/src/gallium/drivers/tegra/tegra_context.c
+@@ -562,6 +562,7 @@ static void
+ tegra_set_sampler_views(struct pipe_context *pcontext, unsigned shader,
+                         unsigned start_slot, unsigned num_views,
+                         unsigned unbind_num_trailing_slots,
++                        bool take_ownership,
+                         struct pipe_sampler_view **pviews)
+ {
+    struct pipe_sampler_view *views[PIPE_MAX_SHADER_SAMPLER_VIEWS];
+@@ -573,7 +574,7 @@ tegra_set_sampler_views(struct pipe_context *pcontext, unsigned shader,
+ 
+    context->gpu->set_sampler_views(context->gpu, shader, start_slot,
+                                    num_views, unbind_num_trailing_slots,
+-                                   views);
++                                   take_ownership, views);
+ }
+ 
+ static void
+diff --git a/src/gallium/drivers/v3d/v3d_blit.c b/src/gallium/drivers/v3d/v3d_blit.c
+index 192e8d75bb0..1202046589c 100644
+--- a/src/gallium/drivers/v3d/v3d_blit.c
++++ b/src/gallium/drivers/v3d/v3d_blit.c
+@@ -823,7 +823,7 @@ v3d_sand8_blit(struct pipe_context *pctx, struct pipe_blit_info *info)
+         /* Unbind the textures, to make sure we don't try to recurse into the
+          * shadow blit.
+          */
+-        pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 0, 0, NULL);
++        pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 0, 0, false, NULL);
+         pctx->bind_sampler_states(pctx, PIPE_SHADER_FRAGMENT, 0, 0, NULL);
+ 
+         util_blitter_custom_shader(v3d->blitter, dst_surf,
+diff --git a/src/gallium/drivers/v3d/v3dx_state.c b/src/gallium/drivers/v3d/v3dx_state.c
+index 4c553988b8b..94c32747d4f 100644
+--- a/src/gallium/drivers/v3d/v3dx_state.c
++++ b/src/gallium/drivers/v3d/v3dx_state.c
+@@ -1148,6 +1148,7 @@ v3d_set_sampler_views(struct pipe_context *pctx,
+                       enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+         struct v3d_context *v3d = v3d_context(pctx);
+@@ -1160,7 +1161,12 @@ v3d_set_sampler_views(struct pipe_context *pctx,
+         for (i = 0; i < nr; i++) {
+                 if (views[i])
+                         new_nr = i + 1;
+-                pipe_sampler_view_reference(&stage_tex->textures[i], views[i]);
++                if (take_ownership) {
++                        pipe_sampler_view_reference(&stage_tex->textures[i], NULL);
++                        stage_tex->textures[i] = views[i];
++                } else {
++                        pipe_sampler_view_reference(&stage_tex->textures[i], views[i]);
++                }
+         }
+ 
+         for (; i < stage_tex->num_textures; i++) {
+diff --git a/src/gallium/drivers/vc4/vc4_blit.c b/src/gallium/drivers/vc4/vc4_blit.c
+index 5e505597436..d7f756f7294 100644
+--- a/src/gallium/drivers/vc4/vc4_blit.c
++++ b/src/gallium/drivers/vc4/vc4_blit.c
+@@ -381,7 +381,7 @@ vc4_yuv_blit(struct pipe_context *pctx, const struct pipe_blit_info *info)
+         /* Unbind the textures, to make sure we don't try to recurse into the
+          * shadow blit.
+          */
+-        pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 0, 0, NULL);
++        pctx->set_sampler_views(pctx, PIPE_SHADER_FRAGMENT, 0, 0, 0, false, NULL);
+         pctx->bind_sampler_states(pctx, PIPE_SHADER_FRAGMENT, 0, 0, NULL);
+ 
+         util_blitter_custom_shader(vc4->blitter, dst_surf,
+diff --git a/src/gallium/drivers/vc4/vc4_state.c b/src/gallium/drivers/vc4/vc4_state.c
+index 6416a195272..ad068494b3e 100644
+--- a/src/gallium/drivers/vc4/vc4_state.c
++++ b/src/gallium/drivers/vc4/vc4_state.c
+@@ -652,6 +652,7 @@ vc4_set_sampler_views(struct pipe_context *pctx,
+                       enum pipe_shader_type shader,
+                       unsigned start, unsigned nr,
+                       unsigned unbind_num_trailing_slots,
++                      bool take_ownership,
+                       struct pipe_sampler_view **views)
+ {
+         struct vc4_context *vc4 = vc4_context(pctx);
+@@ -664,7 +665,12 @@ vc4_set_sampler_views(struct pipe_context *pctx,
+         for (i = 0; i < nr; i++) {
+                 if (views[i])
+                         new_nr = i + 1;
+-                pipe_sampler_view_reference(&stage_tex->textures[i], views[i]);
++                if (take_ownership) {
++                        pipe_sampler_view_reference(&stage_tex->textures[i], NULL);
++                        stage_tex->textures[i] = views[i];
++                } else {
++                        pipe_sampler_view_reference(&stage_tex->textures[i], views[i]);
++                }
+         }
+ 
+         for (; i < stage_tex->num_textures; i++) {
+diff --git a/src/gallium/drivers/virgl/virgl_context.c b/src/gallium/drivers/virgl/virgl_context.c
+index dcb0ec62ae8..349e7425f5e 100644
+--- a/src/gallium/drivers/virgl/virgl_context.c
++++ b/src/gallium/drivers/virgl/virgl_context.c
+@@ -1015,6 +1015,7 @@ static void virgl_set_sampler_views(struct pipe_context *ctx,
+                                    unsigned start_slot,
+                                    unsigned num_views,
+                                    unsigned unbind_num_trailing_slots,
++                                   bool take_ownership,
+                                    struct pipe_sampler_view **views)
+ {
+    struct virgl_context *vctx = virgl_context(ctx);
+@@ -1028,7 +1029,12 @@ static void virgl_set_sampler_views(struct pipe_context *ctx,
+          struct virgl_resource *res = virgl_resource(views[i]->texture);
+          res->bind_history |= PIPE_BIND_SAMPLER_VIEW;
+ 
+-         pipe_sampler_view_reference(&binding->views[idx], views[i]);
++         if (take_ownership) {
++            pipe_sampler_view_reference(&binding->views[idx], NULL);
++            binding->views[idx] = views[i];
++         } else {
++            pipe_sampler_view_reference(&binding->views[idx], views[i]);
++         }
+          binding->view_enabled_mask |= 1 << idx;
+       } else {
+          pipe_sampler_view_reference(&binding->views[idx], NULL);
+@@ -1041,7 +1047,7 @@ static void virgl_set_sampler_views(struct pipe_context *ctx,
+ 
+    if (unbind_num_trailing_slots) {
+       virgl_set_sampler_views(ctx, shader_type, start_slot + num_views,
+-                              unbind_num_trailing_slots, 0, NULL);
++                              unbind_num_trailing_slots, 0, false, NULL);
+    }
+ }
+ 
+diff --git a/src/gallium/drivers/zink/zink_context.c b/src/gallium/drivers/zink/zink_context.c
+index b279c3563a1..9ce7ea013fa 100644
+--- a/src/gallium/drivers/zink/zink_context.c
++++ b/src/gallium/drivers/zink/zink_context.c
+@@ -1376,6 +1376,7 @@ zink_set_sampler_views(struct pipe_context *pctx,
+                        unsigned start_slot,
+                        unsigned num_views,
+                        unsigned unbind_num_trailing_slots,
++                       bool take_ownership,
+                        struct pipe_sampler_view **views)
+ {
+    struct zink_context *ctx = zink_context(pctx);
+@@ -1440,7 +1441,12 @@ zink_set_sampler_views(struct pipe_context *pctx,
+          unbind_samplerview(ctx, shader_type, start_slot + i);
+          update = true;
+       }
+-      pipe_sampler_view_reference(&ctx->sampler_views[shader_type][start_slot + i], pview);
++      if (take_ownership) {
++         pipe_sampler_view_reference(&ctx->sampler_views[shader_type][start_slot + i], NULL);
++         ctx->sampler_views[shader_type][start_slot + i] = pview;
++      } else {
++         pipe_sampler_view_reference(&ctx->sampler_views[shader_type][start_slot + i], pview);
++      }
+       update_descriptor_state_sampler(ctx, shader_type, start_slot + i);
+    }
+    for (; i < num_views + unbind_num_trailing_slots; ++i) {
+diff --git a/src/gallium/frontends/clover/core/kernel.cpp b/src/gallium/frontends/clover/core/kernel.cpp
+index 894b3bfffe2..67ff08a3c8e 100644
+--- a/src/gallium/frontends/clover/core/kernel.cpp
++++ b/src/gallium/frontends/clover/core/kernel.cpp
+@@ -86,7 +86,7 @@ kernel::launch(command_queue &q,
+                                exec.samplers.data());
+ 
+    q.pipe->set_sampler_views(q.pipe, PIPE_SHADER_COMPUTE, 0,
+-                             exec.sviews.size(), 0, exec.sviews.data());
++                             exec.sviews.size(), 0, false, exec.sviews.data());
+    q.pipe->set_shader_images(q.pipe, PIPE_SHADER_COMPUTE, 0,
+                              exec.iviews.size(), 0, exec.iviews.data());
+    q.pipe->set_compute_resources(q.pipe, 0, exec.resources.size(),
+@@ -108,7 +108,7 @@ kernel::launch(command_queue &q,
+    q.pipe->set_shader_images(q.pipe, PIPE_SHADER_COMPUTE, 0,
+                              0, exec.iviews.size(), NULL);
+    q.pipe->set_sampler_views(q.pipe, PIPE_SHADER_COMPUTE, 0,
+-                             0, exec.sviews.size(), NULL);
++                             0, exec.sviews.size(), false, NULL);
+    q.pipe->bind_sampler_states(q.pipe, PIPE_SHADER_COMPUTE, 0,
+                                exec.samplers.size(), NULL);
+ 
+diff --git a/src/gallium/frontends/lavapipe/lvp_execute.c b/src/gallium/frontends/lavapipe/lvp_execute.c
+index 1c504a7d0e7..532ac8551e3 100644
+--- a/src/gallium/frontends/lavapipe/lvp_execute.c
++++ b/src/gallium/frontends/lavapipe/lvp_execute.c
+@@ -203,7 +203,7 @@ static void emit_compute_state(struct rendering_state *state)
+ 
+    if (state->sv_dirty[PIPE_SHADER_COMPUTE]) {
+       state->pctx->set_sampler_views(state->pctx, PIPE_SHADER_COMPUTE, 0, state->num_sampler_views[PIPE_SHADER_COMPUTE],
+-                                     0, state->sv[PIPE_SHADER_COMPUTE]);
++                                     0, false, state->sv[PIPE_SHADER_COMPUTE]);
+       state->sv_dirty[PIPE_SHADER_COMPUTE] = false;
+    }
+ 
+@@ -332,7 +332,7 @@ static void emit_state(struct rendering_state *state)
+          continue;
+ 
+       state->pctx->set_sampler_views(state->pctx, sh, 0, state->num_sampler_views[sh],
+-                                     0, state->sv[sh]);
++                                     0, false, state->sv[sh]);
+       state->sv_dirty[sh] = false;
+    }
+ 
+diff --git a/src/gallium/frontends/nine/nine_state.c b/src/gallium/frontends/nine/nine_state.c
+index b8dbdd19007..721252e5e2a 100644
+--- a/src/gallium/frontends/nine/nine_state.c
++++ b/src/gallium/frontends/nine/nine_state.c
+@@ -1039,7 +1039,8 @@ update_textures_and_samplers(struct NineDevice9 *device)
+        view[i] = NULL;
+ 
+     pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, num_textures,
+-                            num_textures < context->enabled_sampler_count_ps ? context->enabled_sampler_count_ps - num_textures : 0, view);
++                            num_textures < context->enabled_sampler_count_ps ? context->enabled_sampler_count_ps - num_textures : 0,
++                            false, view);
+     context->enabled_sampler_count_ps = num_textures;
+ 
+     if (commit_samplers)
+@@ -1083,7 +1084,8 @@ update_textures_and_samplers(struct NineDevice9 *device)
+        view[i] = NULL;
+ 
+     pipe->set_sampler_views(pipe, PIPE_SHADER_VERTEX, 0, num_textures,
+-                            num_textures < context->enabled_sampler_count_vs ? context->enabled_sampler_count_vs - num_textures : 0, view);
++                            num_textures < context->enabled_sampler_count_vs ? context->enabled_sampler_count_vs - num_textures : 0,
++                            false, view);
+     context->enabled_sampler_count_vs = num_textures;
+ 
+     if (commit_samplers)
+@@ -2968,8 +2970,10 @@ nine_context_clear(struct NineDevice9 *device)
+     context->enabled_sampler_count_vs = 0;
+     context->enabled_sampler_count_ps = 0;
+ 
+-    pipe->set_sampler_views(pipe, PIPE_SHADER_VERTEX, 0, 0, NINE_MAX_SAMPLERS_VS, NULL);
+-    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0, NINE_MAX_SAMPLERS_PS, NULL);
++    pipe->set_sampler_views(pipe, PIPE_SHADER_VERTEX, 0, 0,
++                            NINE_MAX_SAMPLERS_VS, false, NULL);
++    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
++                            NINE_MAX_SAMPLERS_PS, false, NULL);
+ 
+     pipe->set_vertex_buffers(pipe, 0, 0, device->caps.MaxStreams, false, NULL);
+ 
+diff --git a/src/gallium/frontends/xa/xa_composite.c b/src/gallium/frontends/xa/xa_composite.c
+index c0d80855f14..49497cfb10f 100644
+--- a/src/gallium/frontends/xa/xa_composite.c
++++ b/src/gallium/frontends/xa/xa_composite.c
+@@ -505,7 +505,7 @@ bind_samplers(struct xa_context *ctx,
+     cso_set_samplers(ctx->cso, PIPE_SHADER_FRAGMENT, num_samplers,
+ 		     (const struct pipe_sampler_state **)samplers);
+     pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, num_samplers, 0,
+-                            ctx->bound_sampler_views);
++                            false, ctx->bound_sampler_views);
+     ctx->num_bound_samplers = num_samplers;
+ }
+ 
+diff --git a/src/gallium/frontends/xa/xa_context.c b/src/gallium/frontends/xa/xa_context.c
+index a1dad5db871..9601e6d7f6a 100644
+--- a/src/gallium/frontends/xa/xa_context.c
++++ b/src/gallium/frontends/xa/xa_context.c
+@@ -327,7 +327,8 @@ xa_solid_prepare(struct xa_context *ctx, struct xa_surface *dst,
+     renderer_bind_destination(ctx, ctx->srf);
+     bind_solid_blend_state(ctx);
+     cso_set_samplers(ctx->cso, PIPE_SHADER_FRAGMENT, 0, NULL);
+-    ctx->pipe->set_sampler_views(ctx->pipe, PIPE_SHADER_FRAGMENT, 0, 0, XA_MAX_SAMPLERS, NULL);
++    ctx->pipe->set_sampler_views(ctx->pipe, PIPE_SHADER_FRAGMENT, 0, 0,
++                                 XA_MAX_SAMPLERS, false, NULL);
+ 
+     shader = xa_shaders_get(ctx->shaders, vs_traits, fs_traits);
+     cso_set_vertex_shader_handle(ctx->cso, shader.vs);
+diff --git a/src/gallium/frontends/xa/xa_renderer.c b/src/gallium/frontends/xa/xa_renderer.c
+index 6596ccdcd9d..6aa661322e3 100644
+--- a/src/gallium/frontends/xa/xa_renderer.c
++++ b/src/gallium/frontends/xa/xa_renderer.c
+@@ -446,7 +446,7 @@ renderer_copy_prepare(struct xa_context *r,
+ 	u_sampler_view_default_template(&templ,
+ 					src_texture, src_texture->format);
+ 	src_view = pipe->create_sampler_view(pipe, src_texture, &templ);
+-	pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &src_view);
++	pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &src_view);
+ 	pipe_sampler_view_reference(&src_view, NULL);
+     }
+ 
+diff --git a/src/gallium/frontends/xa/xa_yuv.c b/src/gallium/frontends/xa/xa_yuv.c
+index 58d43b69cf5..0da841333c8 100644
+--- a/src/gallium/frontends/xa/xa_yuv.c
++++ b/src/gallium/frontends/xa/xa_yuv.c
+@@ -93,7 +93,7 @@ xa_yuv_bind_samplers(struct xa_context *r, struct xa_surface *yuv[])
+     }
+     r->num_bound_samplers = 3;
+     cso_set_samplers(r->cso, PIPE_SHADER_FRAGMENT, 3, (const struct pipe_sampler_state **)samplers);
+-    r->pipe->set_sampler_views(r->pipe, PIPE_SHADER_FRAGMENT, 0, 3, 0, r->bound_sampler_views);
++    r->pipe->set_sampler_views(r->pipe, PIPE_SHADER_FRAGMENT, 0, 3, 0, false, r->bound_sampler_views);
+ }
+ 
+ static void
+diff --git a/src/gallium/include/pipe/p_context.h b/src/gallium/include/pipe/p_context.h
+index 26da7006892..0a8c57e00f3 100644
+--- a/src/gallium/include/pipe/p_context.h
++++ b/src/gallium/include/pipe/p_context.h
+@@ -446,6 +446,7 @@ struct pipe_context {
+                              enum pipe_shader_type shader,
+                              unsigned start_slot, unsigned num_views,
+                              unsigned unbind_num_trailing_slots,
++                             bool take_ownership,
+                              struct pipe_sampler_view **views);
+ 
+    void (*set_tess_state)(struct pipe_context *,
+diff --git a/src/gallium/tests/graw/fs-test.c b/src/gallium/tests/graw/fs-test.c
+index d6a2d284378..b4ddfb6099d 100644
+--- a/src/gallium/tests/graw/fs-test.c
++++ b/src/gallium/tests/graw/fs-test.c
+@@ -355,7 +355,7 @@ static void init_tex( void )
+    if (sv == NULL)
+       exit(5);
+ 
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+    
+ 
+    memset(&sampler_desc, 0, sizeof sampler_desc);
+diff --git a/src/gallium/tests/graw/gs-test.c b/src/gallium/tests/graw/gs-test.c
+index d57537d7534..cd6bdec98c8 100644
+--- a/src/gallium/tests/graw/gs-test.c
++++ b/src/gallium/tests/graw/gs-test.c
+@@ -445,7 +445,7 @@ static void init_tex( void )
+    if (sv == NULL)
+       exit(5);
+ 
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+    
+ 
+    memset(&sampler_desc, 0, sizeof sampler_desc);
+diff --git a/src/gallium/tests/graw/quad-sample.c b/src/gallium/tests/graw/quad-sample.c
+index 56b8b77caa1..43667463597 100644
+--- a/src/gallium/tests/graw/quad-sample.c
++++ b/src/gallium/tests/graw/quad-sample.c
+@@ -270,7 +270,7 @@ static void init_tex( void )
+    if (sv == NULL)
+       exit(5);
+ 
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+    
+ 
+    memset(&sampler_desc, 0, sizeof sampler_desc);
+diff --git a/src/gallium/tests/graw/quad-tex.c b/src/gallium/tests/graw/quad-tex.c
+index 5eb1ae59e7a..3c78b355061 100644
+--- a/src/gallium/tests/graw/quad-tex.c
++++ b/src/gallium/tests/graw/quad-tex.c
+@@ -168,7 +168,7 @@ static void init_tex( void )
+                                     PIPE_FORMAT_B8G8R8A8_UNORM, tex2d);
+ 
+    sv = graw_util_create_simple_sampler_view(&info, texture);
+-   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+ 
+    sampler = graw_util_create_simple_sampler(&info, 
+                                              PIPE_TEX_WRAP_REPEAT,
+diff --git a/src/gallium/tests/graw/tex-srgb.c b/src/gallium/tests/graw/tex-srgb.c
+index cf9a2a14bef..0d3e9ba1548 100644
+--- a/src/gallium/tests/graw/tex-srgb.c
++++ b/src/gallium/tests/graw/tex-srgb.c
+@@ -129,11 +129,11 @@ static void draw( void )
+ 
+    info.ctx->clear(info.ctx, PIPE_CLEAR_COLOR, NULL, &clear_color, 0, 0);
+ 
+-   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &linear_sv);
++   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &linear_sv);
+    set_vertices(vertices1, 4);
+    util_draw_arrays(info.ctx, PIPE_PRIM_QUADS, 0, 4);
+ 
+-   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &srgb_sv);
++   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &srgb_sv);
+    set_vertices(vertices2, 4);
+    util_draw_arrays(info.ctx, PIPE_PRIM_QUADS, 0, 4);
+ 
+diff --git a/src/gallium/tests/graw/tex-swizzle.c b/src/gallium/tests/graw/tex-swizzle.c
+index fa5a3e8e5d5..a522a2e0162 100644
+--- a/src/gallium/tests/graw/tex-swizzle.c
++++ b/src/gallium/tests/graw/tex-swizzle.c
+@@ -147,7 +147,7 @@ init_tex(const unsigned swizzle[4])
+    if (sv == NULL)
+       exit(5);
+ 
+-   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   info.ctx->set_sampler_views(info.ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+ 
+    sampler = graw_util_create_simple_sampler(&info,
+                                              PIPE_TEX_WRAP_REPEAT,
+diff --git a/src/gallium/tests/graw/vs-test.c b/src/gallium/tests/graw/vs-test.c
+index 7f9a6eeb982..215a756bbd3 100644
+--- a/src/gallium/tests/graw/vs-test.c
++++ b/src/gallium/tests/graw/vs-test.c
+@@ -343,7 +343,7 @@ static void init_tex( void )
+    if (sv == NULL)
+       exit(5);
+ 
+-   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sv);
++   ctx->set_sampler_views(ctx, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &sv);
+    
+ 
+    memset(&sampler_desc, 0, sizeof sampler_desc);
+diff --git a/src/gallium/tests/trivial/compute.c b/src/gallium/tests/trivial/compute.c
+index 9c66a93ef96..2fd4756644e 100644
+--- a/src/gallium/tests/trivial/compute.c
++++ b/src/gallium/tests/trivial/compute.c
+@@ -315,7 +315,7 @@ static void init_sampler_views(struct context *ctx, const int *slots)
+                 assert(ctx->view[i]);
+         }
+ 
+-        pipe->set_sampler_views(pipe, PIPE_SHADER_COMPUTE, 0, i, 0, ctx->view);
++        pipe->set_sampler_views(pipe, PIPE_SHADER_COMPUTE, 0, i, 0, false, ctx->view);
+ }
+ 
+ static void destroy_sampler_views(struct context *ctx)
+@@ -323,7 +323,7 @@ static void destroy_sampler_views(struct context *ctx)
+         struct pipe_context *pipe = ctx->pipe;
+         int i;
+ 
+-        pipe->set_sampler_views(pipe, PIPE_SHADER_COMPUTE, 0, 0, MAX_RESOURCES, NULL);
++        pipe->set_sampler_views(pipe, PIPE_SHADER_COMPUTE, 0, 0, MAX_RESOURCES, false, NULL);
+ 
+         for (i = 0; i < MAX_RESOURCES; ++i) {
+                 if (ctx->view[i]) {
+diff --git a/src/gallium/tests/trivial/quad-tex.c b/src/gallium/tests/trivial/quad-tex.c
+index 85c35a45bdd..2578fb573cd 100644
+--- a/src/gallium/tests/trivial/quad-tex.c
++++ b/src/gallium/tests/trivial/quad-tex.c
+@@ -327,7 +327,7 @@ static void draw(struct program *p)
+ 	cso_set_samplers(p->cso, PIPE_SHADER_FRAGMENT, 1, samplers);
+ 
+ 	/* texture sampler view */
+-	p->pipe->set_sampler_views(p->pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &p->view);
++	p->pipe->set_sampler_views(p->pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, false, &p->view);
+ 
+ 	/* shaders */
+ 	cso_set_fragment_shader_handle(p->cso, p->fs);
+diff --git a/src/mesa/state_tracker/st_atom_texture.c b/src/mesa/state_tracker/st_atom_texture.c
+index b481f355441..c6082c06a6f 100644
+--- a/src/mesa/state_tracker/st_atom_texture.c
++++ b/src/mesa/state_tracker/st_atom_texture.c
+@@ -270,7 +270,7 @@ update_textures(struct st_context *st, enum  pipe_shader_type shader_stage,
+                             old_num_textures - num_textures : 0;
+ 
+    pipe->set_sampler_views(pipe, shader_stage, 0, num_textures, num_unbind,
+-                           sampler_views);
++                           false, sampler_views);
+    st->state.num_sampler_views[shader_stage] = num_textures;
+ }
+ 
+diff --git a/src/mesa/state_tracker/st_cb_bitmap.c b/src/mesa/state_tracker/st_cb_bitmap.c
+index db6065da85a..d1942ca3707 100644
+--- a/src/mesa/state_tracker/st_cb_bitmap.c
++++ b/src/mesa/state_tracker/st_cb_bitmap.c
+@@ -249,7 +249,7 @@ setup_render_state(struct gl_context *ctx,
+       num_views = MAX2(fpv->bitmap_sampler + 1, num_views);
+       sampler_views[fpv->bitmap_sampler] = sv;
+       pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, num_views, 0,
+-                              sampler_views);
++                              false, sampler_views);
+       st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = num_views;
+ 
+       for (unsigned i = 0; i < num_views; i++)
+@@ -285,7 +285,7 @@ restore_render_state(struct gl_context *ctx)
+     */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+                            st->state.num_sampler_views[PIPE_SHADER_FRAGMENT],
+-                           NULL);
++                           false, NULL);
+    st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = 0;
+ 
+    st->dirty |= ST_NEW_VERTEX_ARRAYS |
+diff --git a/src/mesa/state_tracker/st_cb_drawpixels.c b/src/mesa/state_tracker/st_cb_drawpixels.c
+index 4e400e0042f..3a7e240f387 100644
+--- a/src/mesa/state_tracker/st_cb_drawpixels.c
++++ b/src/mesa/state_tracker/st_cb_drawpixels.c
+@@ -885,7 +885,7 @@ draw_textured_quad(struct gl_context *ctx, GLint x, GLint y, GLfloat z,
+       if (sv[1])
+          sampler_views[fpv->pixelmap_sampler] = sv[1];
+       pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, num_views, 0,
+-                              sampler_views);
++                              false, sampler_views);
+       st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = num_views;
+ 
+       for (unsigned i = 0; i < num_views; i++)
+@@ -893,7 +893,7 @@ draw_textured_quad(struct gl_context *ctx, GLint x, GLint y, GLfloat z,
+    } else {
+       /* drawing a depth/stencil image */
+       pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, num_sampler_view,
+-                              0, sv);
++                              0, false, sv);
+       st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] =
+          MAX2(st->state.num_sampler_views[PIPE_SHADER_FRAGMENT], num_sampler_view);
+ 
+@@ -952,7 +952,7 @@ draw_textured_quad(struct gl_context *ctx, GLint x, GLint y, GLfloat z,
+     */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+                            st->state.num_sampler_views[PIPE_SHADER_FRAGMENT],
+-                           NULL);
++                           false, NULL);
+    st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = 0;
+ 
+    st->dirty |= ST_NEW_VERTEX_ARRAYS |
+diff --git a/src/mesa/state_tracker/st_cb_readpixels.c b/src/mesa/state_tracker/st_cb_readpixels.c
+index 72dc56dec1a..e9cd0b4149f 100644
+--- a/src/mesa/state_tracker/st_cb_readpixels.c
++++ b/src/mesa/state_tracker/st_cb_readpixels.c
+@@ -190,7 +190,7 @@ try_pbo_readpixels(struct st_context *st, struct st_renderbuffer *strb,
+          goto fail;
+ 
+       pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0,
+-                              &sampler_view);
++                              false, &sampler_view);
+       st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] =
+          MAX2(st->state.num_sampler_views[PIPE_SHADER_FRAGMENT], 1);
+ 
+@@ -261,7 +261,7 @@ fail:
+     */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+                            st->state.num_sampler_views[PIPE_SHADER_FRAGMENT],
+-                           NULL);
++                           false, NULL);
+    st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = 0;
+    pipe->set_shader_images(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 1, NULL);
+ 
+diff --git a/src/mesa/state_tracker/st_cb_texture.c b/src/mesa/state_tracker/st_cb_texture.c
+index 5a492d07a0a..a39005ffd4f 100644
+--- a/src/mesa/state_tracker/st_cb_texture.c
++++ b/src/mesa/state_tracker/st_cb_texture.c
+@@ -1618,7 +1618,7 @@ try_pbo_upload_common(struct gl_context *ctx,
+          goto fail;
+ 
+       pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0,
+-                              &sampler_view);
++                              false, &sampler_view);
+       st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] =
+          MAX2(st->state.num_sampler_views[PIPE_SHADER_FRAGMENT], 1);
+ 
+@@ -1662,7 +1662,7 @@ fail:
+     */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+                            st->state.num_sampler_views[PIPE_SHADER_FRAGMENT],
+-                           NULL);
++                           false, NULL);
+    st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = 0;
+ 
+    st->dirty |= ST_NEW_VERTEX_ARRAYS |
+@@ -1891,9 +1891,8 @@ try_pbo_download(struct st_context *st,
+       if (sampler_view == NULL)
+          goto fail;
+ 
+-      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, &sampler_view);
+-
+-      pipe_sampler_view_reference(&sampler_view, NULL);
++      pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 1, 0, true, &sampler_view);
++      sampler_view = NULL;
+ 
+       cso_set_samplers(cso, PIPE_SHADER_FRAGMENT, 1, samplers);
+    }
+@@ -1957,7 +1956,7 @@ fail:
+     */
+    pipe->set_sampler_views(pipe, PIPE_SHADER_FRAGMENT, 0, 0,
+                            st->state.num_sampler_views[PIPE_SHADER_FRAGMENT],
+-                           NULL);
++                           false, NULL);
+    st->state.num_sampler_views[PIPE_SHADER_FRAGMENT] = 0;
+    pipe->set_shader_images(pipe, PIPE_SHADER_FRAGMENT, 0, 0, 1, NULL);
+ 
+-- 
+2.37.1.windows.1
+

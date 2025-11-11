@@ -1,0 +1,84 @@
+From 4f4c9ff68a37cb6f6cac956df58ea0022b08cf6f Mon Sep 17 00:00:00 2001
+From: Hannes Mann <hannesmann2000@gmail.com>
+Date: Mon, 20 Nov 2023 23:16:50 +0100
+Subject: [PATCH] gallium/pipe: Add contiguous planes per-surface attribute
+
+Attribute is set when textures are created by compatible drivers, but
+not when importing from DMA-BUF.
+
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/26165>
+---
+ src/gallium/auxiliary/vl/vl_video_buffer.c       | 1 +
+ src/gallium/drivers/d3d12/d3d12_video_buffer.cpp | 1 +
+ src/gallium/drivers/r600/r600_uvd.c              | 1 +
+ src/gallium/frontends/va/image.c                 | 5 +++--
+ src/gallium/include/pipe/p_video_codec.h         | 1 +
+ 5 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/auxiliary/vl/vl_video_buffer.c b/src/gallium/auxiliary/vl/vl_video_buffer.c
+index 69cc4563df7..c39717f2b4e 100644
+--- a/src/gallium/auxiliary/vl/vl_video_buffer.c
++++ b/src/gallium/auxiliary/vl/vl_video_buffer.c
+@@ -535,5 +535,6 @@ vl_video_buffer_create_as_resource(struct pipe_context *pipe,
+    struct pipe_video_buffer vidtemplate = *tmpl;
+    vidtemplate.width = templ.width0;
+    vidtemplate.height = templ.height0 * array_size;
++   vidtemplate.contiguous_planes = true;
+    return vl_video_buffer_create_ex2(pipe, &vidtemplate, resources);
+ }
+diff --git a/src/gallium/drivers/d3d12/d3d12_video_buffer.cpp b/src/gallium/drivers/d3d12/d3d12_video_buffer.cpp
+index f1e08ecc8d4..8f656a33536 100644
+--- a/src/gallium/drivers/d3d12/d3d12_video_buffer.cpp
++++ b/src/gallium/drivers/d3d12/d3d12_video_buffer.cpp
+@@ -60,6 +60,7 @@ d3d12_video_buffer_create_impl(struct pipe_context *pipe,
+    pD3D12VideoBuffer->base.width         = tmpl->width;
+    pD3D12VideoBuffer->base.height        = tmpl->height;
+    pD3D12VideoBuffer->base.interlaced    = tmpl->interlaced;
++   pD3D12VideoBuffer->base.contiguous_planes = true;
+    pD3D12VideoBuffer->base.associated_data = nullptr;
+ 
+    pD3D12VideoBuffer->base.bind =  PIPE_BIND_CUSTOM;
+diff --git a/src/gallium/drivers/r600/r600_uvd.c b/src/gallium/drivers/r600/r600_uvd.c
+index 34f159206a7..7feda19b772 100644
+--- a/src/gallium/drivers/r600/r600_uvd.c
++++ b/src/gallium/drivers/r600/r600_uvd.c
+@@ -52,6 +52,7 @@ struct pipe_video_buffer *r600_video_buffer_create(struct pipe_context *pipe,
+ 	template = *tmpl;
+ 	template.width = align(tmpl->width, VL_MACROBLOCK_WIDTH);
+ 	template.height = align(tmpl->height / array_size, VL_MACROBLOCK_HEIGHT);
++	template.contiguous_planes = true;
+ 
+ 	vl_video_buffer_template(&templ, &template, resource_formats[0], 1, array_size,
+ 									 PIPE_USAGE_DEFAULT, 0, chroma_format);
+diff --git a/src/gallium/frontends/va/image.c b/src/gallium/frontends/va/image.c
+index e7195e1b15e..eeb8269190b 100644
+--- a/src/gallium/frontends/va/image.c
++++ b/src/gallium/frontends/va/image.c
+@@ -277,9 +277,10 @@ vlVaDeriveImage(VADriverContextP ctx, VASurfaceID surface, VAImage *image)
+                                    PIPE_VIDEO_CAP_SUPPORTS_PROGRESSIVE))
+          return VA_STATUS_ERROR_OPERATION_FAILED;
+    } else if (util_format_get_num_planes(surf->buffer->buffer_format) >= 2 &&
+-              !screen->get_video_param(screen, PIPE_VIDEO_PROFILE_UNKNOWN,
++              (!screen->get_video_param(screen, PIPE_VIDEO_PROFILE_UNKNOWN,
+                                        PIPE_VIDEO_ENTRYPOINT_BITSTREAM,
+-                                       PIPE_VIDEO_CAP_SUPPORTS_CONTIGUOUS_PLANES_MAP)) {
++                                       PIPE_VIDEO_CAP_SUPPORTS_CONTIGUOUS_PLANES_MAP) ||
++               !surf->buffer->contiguous_planes)) {
+       return VA_STATUS_ERROR_OPERATION_FAILED;
+    }
+ 
+diff --git a/src/gallium/include/pipe/p_video_codec.h b/src/gallium/include/pipe/p_video_codec.h
+index c94c699e298..5facab197e5 100644
+--- a/src/gallium/include/pipe/p_video_codec.h
++++ b/src/gallium/include/pipe/p_video_codec.h
+@@ -212,6 +212,7 @@ struct pipe_video_buffer
+    unsigned height;
+    bool interlaced;
+    unsigned bind;
++   bool contiguous_planes;
+ 
+    /**
+     * destroy this video buffer
+-- 
+2.37.1.windows.1
+
