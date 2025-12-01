@@ -11,9 +11,27 @@
 #define OS_DRM_H
 
 #ifdef _WIN32
-#error "Windows shouldn't include this."
+//#error "Windows shouldn't include this."
+static inline int
+drm_ioctl(int fd, uint32_t request, void *arg)
+{
+   return 0;
+}
+static inline int
+drm_ioctl_write(int fd, unsigned drm_command_index, void *data, unsigned size)
+{
+   return 0;
+}
+static inline int
+drm_ioctl_write_read(int fd, unsigned drm_command_index, void *data,
+                     unsigned size)
+{
+   return 0;
+}
+
 #endif
 
+#if 0
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <xf86drm.h>
@@ -46,5 +64,5 @@ drm_ioctl_write_read(int fd, unsigned drm_command_index, void *data,
                               DRM_COMMAND_BASE + drm_command_index, size);
    return drm_ioctl(fd, request, data);
 }
-
+#endif
 #endif

@@ -57,6 +57,7 @@ static bool si_compile_llvm(struct si_screen *sscreen, struct si_shader_binary *
                             struct ac_llvm_context *ac, struct util_debug_callback *debug,
                             gl_shader_stage stage, const char *name)
 {
+#if 0
    unsigned count = p_atomic_inc_return(&sscreen->num_compilations);
 
    if (si_can_dump_shader(sscreen, stage, SI_DUMP_LLVM_IR)) {
@@ -104,6 +105,8 @@ static bool si_compile_llvm(struct si_screen *sscreen, struct si_shader_binary *
    bool ok = ac_rtld_read_config(&sscreen->info, &rtld, conf);
    ac_rtld_close(&rtld);
    return ok;
+#endif
+   return false;
 }
 
 static void si_llvm_context_init(struct si_shader_context *ctx, struct si_screen *sscreen,

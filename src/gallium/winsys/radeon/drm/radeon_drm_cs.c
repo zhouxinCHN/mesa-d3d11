@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <xf86drm.h>
+//#include <xf86drm.h>
 
 
 #define RELOC_DWORDS (sizeof(struct drm_radeon_cs_reloc) / sizeof(uint32_t))
@@ -478,6 +478,7 @@ static unsigned radeon_drm_cs_get_buffer_list(struct radeon_cmdbuf *rcs,
 
 void radeon_drm_cs_emit_ioctl_oneshot(void *job, void *gdata, int thread_index)
 {
+   #if 0
    struct radeon_drm_cs *cs = (struct radeon_drm_cs*)job;
    struct radeon_cs_context *csc = cs->cst;
    unsigned i;
@@ -507,6 +508,7 @@ void radeon_drm_cs_emit_ioctl_oneshot(void *job, void *gdata, int thread_index)
       p_atomic_dec(&csc->slab_buffers[i].bo->num_active_ioctls);
 
    radeon_cs_context_cleanup(&cs->ws->base, csc);
+   #endif
 }
 
 /*

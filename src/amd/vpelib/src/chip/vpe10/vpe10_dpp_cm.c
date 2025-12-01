@@ -29,6 +29,8 @@
 #define CTX      vpe10_dpp
 #define CTX_BASE dpp
 
+#pragma warning(disable:4189)
+
 static void vpe10_enable_cm_block(struct dpp *dpp)
 {
     unsigned int cm_bypass_mode = 0;

@@ -80,6 +80,7 @@ amdgpu_userq_deinit(struct amdgpu_winsys *aws, struct amdgpu_userq *userq)
 bool
 amdgpu_userq_init(struct amdgpu_winsys *aws, struct amdgpu_userq *userq, enum amd_ip_type ip_type)
 {
+   #if 0
    int r = -1;
    uint32_t hw_ip_type;
    struct drm_amdgpu_userq_mqd_gfx11 gfx_mqd;
@@ -190,5 +191,6 @@ amdgpu_userq_init(struct amdgpu_winsys *aws, struct amdgpu_userq *userq, enum am
 fail:
    amdgpu_userq_deinit(aws, userq);
    simple_mtx_unlock(&userq->lock);
+   #endif
    return false;
 }

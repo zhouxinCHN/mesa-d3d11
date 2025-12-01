@@ -23,6 +23,8 @@
  */
 #include "color_gamut.h"
 
+#pragma warning(disable:4189)
+
 #define DIVIDER 10000
 
 struct gamut_space_entry {

@@ -94,11 +94,11 @@ void ac_add_attr_alignment(LLVMValueRef val, uint64_t bytes)
 
 LLVMModuleRef ac_create_module(LLVMTargetMachineRef tm, LLVMContextRef ctx)
 {
-   TargetMachine *TM = reinterpret_cast<TargetMachine *>(tm);
+   //TargetMachine *TM = reinterpret_cast<TargetMachine *>(tm);
    LLVMModuleRef module = LLVMModuleCreateWithNameInContext("mesa-shader", ctx);
 
-   unwrap(module)->setTargetTriple(TM->getTargetTriple().getTriple());
-   unwrap(module)->setDataLayout(TM->createDataLayout());
+   //unwrap(module)->setTargetTriple(TM->getTargetTriple().getTriple());
+   //unwrap(module)->setDataLayout(TM->createDataLayout());
    return module;
 }
 

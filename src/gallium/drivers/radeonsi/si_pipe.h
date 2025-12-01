@@ -2214,8 +2214,8 @@ static inline void si_emit_barrier_direct(struct si_context *sctx)
    }
 }
 
-#define PRINT_ERR(fmt, args...)                                                                    \
-   fprintf(stderr, "EE %s:%d %s - " fmt, __FILE__, __LINE__, __func__, ##args)
+#define PRINT_ERR(fmt, ...)                                                                    \
+   fprintf(stderr, "EE %s:%d %s - " fmt, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 #ifdef __cplusplus
 }

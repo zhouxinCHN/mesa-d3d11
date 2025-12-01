@@ -511,6 +511,13 @@ u_unfilled_gen_c = custom_target(
 )
 
 libgallium_extra_c_args = []
+if with_gallium_radeonsi
+   libgallium_extra_c_args += '-DGALLIUM_RADEONSI'
+endif
+if with_gallium_radeonsi
+   c_msvc_compat_args += '-DGALLIUM_RADEONSI'
+endif
+
 libgallium = static_library(
   'gallium',
   [files_libgallium, u_indices_gen_c, u_unfilled_gen_c],
@@ -575,6 +582,7 @@ endif
 libgalliumvlwinsys = static_library(
   'galliumvlwinsys',
   files_libgalliumvlwinsys,
+  c_args : [ '-DGALLIUM_RADEONSI', ],
   include_directories : [inc_gallium, inc_include, inc_loader, inc_src, include_directories('../drivers/zink')],
   dependencies : [dep_libdrm, vlwinsys_deps, idep_mesautil],
   link_with : [libloader_x11],

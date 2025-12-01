@@ -7,6 +7,7 @@ files_pipe_loader = files(
   'pipe_loader_priv.h',
   'pipe_loader_sw.c',
   'driinfo_gallium.h',
+  'pipe_loader_drm.c',
 )
 
 libpipe_loader_defines = []

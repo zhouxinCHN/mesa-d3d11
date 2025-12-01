@@ -43,9 +43,29 @@
 #if DETECT_OS_POSIX
 #  include <sys/mman.h>
 #else
-#  error Unsupported OS
+//#  error Unsupported OS
+#ifdef __cplusplus
+extern "C" {
 #endif
 
+PUBLIC void *
+os_mmap(void* addr, size_t length, int prot, int flags, int fd, uint64_t offset)
+{
+   return NULL;
+}
+PUBLIC void *
+os_munmap(void* addr, size_t length)
+{
+   return NULL;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+#if 0
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -80,6 +100,7 @@ static inline int os_munmap(void *addr, size_t length)
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 
 #endif /* _OS_MMAN_H_ */

@@ -31,7 +31,7 @@
 #include "util/compiler.h"
 #include "util/u_math.h"
 #include <errno.h>
-#include <xf86drm.h>
+//#include <xf86drm.h>
 #include "drm-uapi/radeon_drm.h"
 
 #define CIK_TILE_MODE_COLOR_2D			14
@@ -122,8 +122,9 @@ static int radeon_get_value(int fd, unsigned req, uint32_t *value)
     *value = 0;
     info.request = req;
     info.value = (uintptr_t)value;
-    r = drmCommandWriteRead(fd, DRM_RADEON_INFO, &info,
-                            sizeof(struct drm_radeon_info));
+    //r = drmCommandWriteRead(fd, DRM_RADEON_INFO, &info,
+    //                        sizeof(struct drm_radeon_info));
+    r = 0;
     return r;
 }
 
@@ -144,10 +145,13 @@ static int radeon_get_family(struct radeon_surface_manager *surf_man)
 
 static unsigned next_power_of_two(unsigned x)
 {
+   #if 0
    if (x <= 1)
        return 1;
 
    return (1 << ((sizeof(unsigned) * 8) - __builtin_clz(x - 1)));
+   #endif
+   return 0;
 }
 
 static unsigned mip_minify(unsigned size, unsigned level)
@@ -195,6 +199,7 @@ static void surf_minify(struct radeon_surface *surf,
  */
 static int r6_init_hw_info(struct radeon_surface_manager *surf_man)
 {
+   #if 0
     uint32_t tiling_config;
     drmVersionPtr version;
     int r;
@@ -256,6 +261,7 @@ static int r6_init_hw_info(struct radeon_surface_manager *surf_man)
         surf_man->hw_info.allow_2d = 0;
         break;
     }
+    #endif
     return 0;
 }
 
@@ -480,6 +486,7 @@ static int r6_surface_best(struct radeon_surface_manager *surf_man,
  */
 static int eg_init_hw_info(struct radeon_surface_manager *surf_man)
 {
+   #if 0
     uint32_t tiling_config;
     drmVersionPtr version;
     int r;
@@ -560,6 +567,7 @@ static int eg_init_hw_info(struct radeon_surface_manager *surf_man)
         surf_man->hw_info.allow_2d = 0;
         break;
     }
+    #endif
     return 0;
 }
 
@@ -1218,6 +1226,7 @@ static void si_gb_tile_mode(uint32_t gb_tile_mode,
 
 static int si_init_hw_info(struct radeon_surface_manager *surf_man)
 {
+   #if 0
     uint32_t tiling_config;
     drmVersionPtr version;
     int r;
@@ -1300,6 +1309,7 @@ static int si_init_hw_info(struct radeon_surface_manager *surf_man)
         surf_man->hw_info.allow_2d = 0;
         break;
     }
+    #endif
     return 0;
 }
 
@@ -2047,6 +2057,7 @@ static void cik_get_2d_params(struct radeon_surface_manager *surf_man,
 
 static int cik_init_hw_info(struct radeon_surface_manager *surf_man)
 {
+   #if 0
     uint32_t tiling_config;
     drmVersionPtr version;
     int r;
@@ -2130,6 +2141,7 @@ static int cik_init_hw_info(struct radeon_surface_manager *surf_man)
         surf_man->hw_info.allow_2d = 0;
         break;
     }
+    #endif
     return 0;
 }
 

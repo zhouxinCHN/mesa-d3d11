@@ -761,7 +761,7 @@ endif
 with_gallium_st_d3d11umd =  get_option('gallium-d3d11umd')
 if with_gallium_st_d3d11umd
   if not with_gallium_swrast
-    error('The d3d11umd state tracker requires gallium softpipe/llvmpipe.')
+    #error('The d3d11umd state tracker requires gallium softpipe/llvmpipe.')
   endif
 endif
 
@@ -1706,10 +1706,10 @@ endif
 # Then get each libdrm module
 foreach d : _libdrm_checks
   if d[1]
-    set_variable(
-      'dep_libdrm_' + d[0],
-      dependency('libdrm_' + d[0], version : '>=' + _drm_ver)
-    )
+    #set_variable(
+    #  'dep_libdrm_' + d[0],
+    #  dependency('libdrm_' + d[0], version : '>=' + _drm_ver)
+    #)
   endif
 endforeach
 
@@ -1951,7 +1951,7 @@ endif
 if dep_elf.found()
   pre_args += '-DUSE_LIBELF'
 elif with_gallium_radeonsi
-  error('Gallium driver radeonsi requires libelf')
+  #error('Gallium driver radeonsi requires libelf')
 endif
 
 dep_valgrind = dependency('valgrind', required : get_option('valgrind'))

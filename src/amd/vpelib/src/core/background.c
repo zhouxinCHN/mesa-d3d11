@@ -26,6 +26,8 @@
 #include "common.h"
 #include "vpe_priv.h"
 
+#pragma warning(disable:4189)
+
 void vpe_create_bg_segments(
     struct vpe_priv *vpe_priv, struct vpe_rect *gaps, uint16_t gaps_cnt, enum vpe_cmd_ops ops)
 {

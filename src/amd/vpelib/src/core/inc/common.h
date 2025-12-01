@@ -28,6 +28,8 @@
 #include "vpe_types.h"
 #include "color.h"
 
+#pragma warning(disable:4189)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

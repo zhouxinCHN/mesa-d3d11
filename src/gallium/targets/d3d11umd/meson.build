@@ -19,10 +19,10 @@ libgallium_d3d11 = shared_library(
   ],
   link_whole : [libd3d11umd],
   link_with : [
-    libgallium, libwsgdi
+    libgallium, libwsgdi, libpipe_loader_static, libgalliumvl, libgalliumvlwinsys, libpipe_loader_static, libradeonwinsys,
   ],
   dependencies : [
-    dep_ws2_32, idep_nir, driver_swrast, idep_mesautil
+    dep_ws2_32, idep_nir, driver_swrast, driver_radeonsi, idep_mesautil,
   ],
   name_prefix: '',
   install : true,

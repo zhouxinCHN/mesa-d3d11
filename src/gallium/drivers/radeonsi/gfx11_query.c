@@ -216,6 +216,7 @@ static void gfx11_sh_query_add_result(struct gfx11_sh_query *query,
 static bool gfx11_sh_query_get_result(struct si_context *sctx, struct si_query *rquery, bool wait,
                                       union pipe_query_result *result)
 {
+   #if 0
    struct gfx11_sh_query *query = (struct gfx11_sh_query *)rquery;
 
    util_query_clear_result(result, query->b.type);
@@ -254,6 +255,7 @@ static bool gfx11_sh_query_get_result(struct si_context *sctx, struct si_query *
       if (qbuf == query->first)
          break;
    }
+        #endif
 
    return true;
 }

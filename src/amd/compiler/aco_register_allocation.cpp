@@ -412,6 +412,7 @@ std::vector<unsigned> find_vars(ra_ctx& ctx, const RegisterFile& reg_file,
 UNUSED void
 print_reg(const RegisterFile& reg_file, PhysReg reg, bool has_adjacent_variable)
 {
+   #if 0
    if (reg_file[reg] == 0xFFFFFFFF) {
       printf((const char*)u8"☐");
    } else if (reg_file[reg]) {
@@ -444,6 +445,7 @@ print_reg(const RegisterFile& reg_file, PhysReg reg, bool has_adjacent_variable)
    } else {
       printf((const char*)u8"·");
    }
+   #endif
 }
 
 /* helper function for debugging */

@@ -16,7 +16,7 @@ si_tracepoints = custom_target(
 )
 
 idep_si_tracepoints = declare_dependency(
-  sources: si_tracepoints,
+#  sources: si_tracepoints,
 )
 
 files_libradeonsi = files(

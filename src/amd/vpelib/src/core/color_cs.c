@@ -30,6 +30,8 @@
 #include "hw_shared.h"
 #include "conversion.h"
 
+#pragma warning(disable:4189)
+
 #define DIVIDER 10000
 /* S2D13 value in [-3.999...3.999] */
 #define S2D13_MIN (-39990)

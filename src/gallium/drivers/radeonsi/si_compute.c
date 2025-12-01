@@ -12,12 +12,12 @@
 #include "util/u_async_debug.h"
 #include "util/u_memory.h"
 #include "util/u_upload_mgr.h"
-#include "si_tracepoints.h"
+//#include "si_tracepoints.h"
 
-#define COMPUTE_DBG(sscreen, fmt, args...)                                                         \
+#define COMPUTE_DBG(sscreen, fmt, ...)                                                         \
    do {                                                                                            \
       if ((sscreen->debug_flags & DBG(COMPUTE)))                                                   \
-         fprintf(stderr, fmt, ##args);                                                             \
+         fprintf(stderr, fmt, __VA_ARGS__);                                                             \
    } while (0);
 
 struct dispatch_packet {
@@ -39,6 +39,7 @@ struct dispatch_packet {
 static const amd_kernel_code_t *si_compute_get_code_object(const struct si_compute *program,
                                                            uint64_t symbol_offset)
 {
+   #if 0
    const struct si_shader_selector *sel = &program->sel;
 
    if (program->ir_type != PIPE_SHADER_IR_NATIVE)
@@ -67,6 +68,8 @@ static const amd_kernel_code_t *si_compute_get_code_object(const struct si_compu
 out:
    ac_rtld_close(&rtld);
    return result;
+   #endif
+   return NULL;
 }
 
 static void code_object_to_config(const amd_kernel_code_t *code_object,
@@ -1170,6 +1173,7 @@ static bool si_check_needs_implicit_sync(struct si_context *sctx, uint32_t usage
 
 static void si_launch_grid(struct pipe_context *ctx, const struct pipe_grid_info *info)
 {
+   #if 0
    struct si_context *sctx = (struct si_context *)ctx;
    struct si_screen *sscreen = sctx->screen;
    struct si_compute *program = sctx->cs_shader_state.program;
@@ -1316,6 +1320,7 @@ static void si_launch_grid(struct pipe_context *ctx, const struct pipe_grid_info
       sctx->barrier_flags |= SI_BARRIER_SYNC_CS;
       si_mark_atom_dirty(sctx, &sctx->atoms.s.barrier);
    }
+   #endif
 }
 
 void si_destroy_compute(struct si_compute *program)

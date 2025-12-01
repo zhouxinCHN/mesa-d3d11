@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <sys/ioctl.h>
+//#include <sys/ioctl.h>
 
 #include "amdgpu_cs.h"
 
@@ -18,7 +18,7 @@
 #include "drm-uapi/amdgpu_drm.h"
 #include "drm-uapi/dma-buf.h"
 #include "sid.h"
-#include <xf86drm.h>
+//#include <xf86drm.h>
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -289,9 +289,9 @@ void amdgpu_bo_destroy(struct amdgpu_winsys *aws, struct pb_buffer_lean *_buf)
 
       entry = _mesa_hash_table_search(sws_iter->kms_handles, bo);
       if (entry) {
-         struct drm_gem_close args = { .handle = (uintptr_t)entry->data };
+         //struct drm_gem_close args = { .handle = (uintptr_t)entry->data };
 
-         drm_ioctl(sws_iter->fd, DRM_IOCTL_GEM_CLOSE, &args);
+         //drm_ioctl(sws_iter->fd, DRM_IOCTL_GEM_CLOSE, &args);
          _mesa_hash_table_remove(sws_iter->kms_handles, entry);
       }
    }
@@ -551,6 +551,7 @@ static struct amdgpu_winsys_bo *amdgpu_create_bo(struct amdgpu_winsys *aws,
                                                  unsigned flags,
                                                  int heap)
 {
+   #if 0
    struct amdgpu_bo_alloc_request request = {0};
    ac_drm_bo buf_handle;
    uint64_t va = 0;
@@ -718,6 +719,7 @@ error_va_alloc:
 
 error_bo_alloc:
    FREE(bo);
+   #endif
    return NULL;
 }
 
@@ -1148,6 +1150,7 @@ amdgpu_bo_sparse_create(struct amdgpu_winsys *aws, uint64_t size,
                         enum radeon_bo_domain domain,
                         enum radeon_bo_flag flags)
 {
+   #if 0
    struct amdgpu_bo_sparse *bo;
    uint64_t map_size;
    uint64_t va_gap_size;
@@ -1205,6 +1208,7 @@ error_va_alloc:
 error_alloc_commitments:
    simple_mtx_destroy(&bo->commit_lock);
    FREE(bo);
+   #endif
    return NULL;
 }
 
@@ -1212,6 +1216,7 @@ static bool
 amdgpu_bo_sparse_commit(struct radeon_winsys *rws, struct pb_buffer_lean *buf,
                         uint64_t offset, uint64_t size, bool commit)
 {
+   #if 0
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    struct amdgpu_bo_sparse *bo = get_sparse_bo(amdgpu_winsys_bo(buf));
    struct amdgpu_sparse_commitment *comm;
@@ -1336,12 +1341,15 @@ out:
    simple_mtx_unlock(&bo->commit_lock);
 
    return ok;
+   #endif
+   return false;
 }
 
 static unsigned
 amdgpu_bo_find_next_committed_memory(struct pb_buffer_lean *buf,
                                      uint64_t range_offset, unsigned *range_size)
 {
+   #if 0
    struct amdgpu_bo_sparse *bo = get_sparse_bo(amdgpu_winsys_bo(buf));
    struct amdgpu_sparse_commitment *comm;
    uint32_t va_page, end_va_page;
@@ -1389,6 +1397,8 @@ amdgpu_bo_find_next_committed_memory(struct pb_buffer_lean *buf,
    /* Calc size of first committed part */
    *range_size = *range_size - uncommitted_range_next - uncommitted_range_prev;
    return *range_size ? uncommitted_range_prev : uncommitted_range_prev + uncommitted_range_next;
+   #endif
+   return 0;
 }
 
 static void amdgpu_buffer_get_metadata(struct radeon_winsys *rws,
@@ -1396,6 +1406,7 @@ static void amdgpu_buffer_get_metadata(struct radeon_winsys *rws,
                                        struct radeon_bo_metadata *md,
                                        struct radeon_surf *surf)
 {
+   #if 0
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    struct amdgpu_bo_real *bo = get_real_bo(amdgpu_winsys_bo(_buf));
    struct amdgpu_bo_info info = {0};
@@ -1425,6 +1436,7 @@ static void amdgpu_buffer_get_metadata(struct radeon_winsys *rws,
 
    ac_surface_apply_bo_metadata(gfx_level, surf, info.metadata.tiling_info,
                                 &md->mode);
+   #endif
 }
 
 static void amdgpu_buffer_set_metadata(struct radeon_winsys *rws,
@@ -1432,6 +1444,7 @@ static void amdgpu_buffer_set_metadata(struct radeon_winsys *rws,
                                        struct radeon_bo_metadata *md,
                                        struct radeon_surf *surf)
 {
+   #if 0
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    struct amdgpu_winsys_bo *bo = amdgpu_winsys_bo(_buf);
    struct amdgpu_bo_real *real = is_real_bo(bo) ? get_real_bo(bo) : get_slab_entry_real_bo(bo);
@@ -1443,6 +1456,7 @@ static void amdgpu_buffer_set_metadata(struct radeon_winsys *rws,
    memcpy(metadata.umd_metadata, md->metadata, sizeof(md->metadata));
 
    ac_drm_bo_set_metadata(aws->dev, real->kms_handle, &metadata);
+   #endif
 }
 
 struct pb_buffer_lean *
@@ -1452,6 +1466,7 @@ amdgpu_bo_create(struct amdgpu_winsys *aws,
                  enum radeon_bo_domain domain,
                  enum radeon_bo_flag flags)
 {
+   #if 0
    struct amdgpu_winsys_bo *bo;
 
    radeon_canonicalize_bo_flags(&domain, &flags);
@@ -1572,6 +1587,8 @@ no_slab:
    }
 
    return &bo->base;
+   #endif
+   return NULL;
 }
 
 static struct pb_buffer_lean *
@@ -1591,6 +1608,7 @@ static struct pb_buffer_lean *amdgpu_bo_from_handle(struct radeon_winsys *rws,
                                                unsigned vm_alignment,
                                                bool is_prime_linear_buffer)
 {
+   #if 0
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    struct amdgpu_bo_real *bo = NULL;
    enum amdgpu_bo_handle_type type;
@@ -1717,6 +1735,7 @@ error:
    if (va_handle)
       ac_drm_va_range_free(va_handle);
    ac_drm_bo_free(aws->dev, result.bo);
+   #endif
    return NULL;
 }
 
@@ -1724,6 +1743,7 @@ static bool amdgpu_bo_get_handle(struct radeon_winsys *rws,
                                  struct pb_buffer_lean *buffer,
                                  struct winsys_handle *whandle)
 {
+   #if 0
    struct amdgpu_screen_winsys *sws = amdgpu_screen_winsys(rws);
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    enum amdgpu_bo_handle_type type;
@@ -1814,6 +1834,7 @@ static bool amdgpu_bo_get_handle(struct radeon_winsys *rws,
    simple_mtx_unlock(&aws->bo_export_table_lock);
 
    bo->is_shared = true;
+   #endif
    return true;
 }
 
@@ -1821,6 +1842,7 @@ static struct pb_buffer_lean *amdgpu_bo_from_ptr(struct radeon_winsys *rws,
 					    void *pointer, uint64_t size,
 					    enum radeon_bo_flag flags)
 {
+   #if 0
     struct amdgpu_winsys *aws = amdgpu_winsys(rws);
     ac_drm_bo buf_handle;
     struct amdgpu_bo_real *bo;
@@ -1881,6 +1903,7 @@ error_va_alloc:
 
 error:
     FREE(bo);
+    #endif
     return NULL;
 }
 
@@ -1900,6 +1923,7 @@ static bool amdgpu_bo_is_suballocated(struct pb_buffer_lean *buf)
 
 uint64_t amdgpu_bo_get_va(struct pb_buffer_lean *buf)
 {
+   #if 0
    struct amdgpu_winsys_bo *bo = amdgpu_winsys_bo(buf);
 
    if (bo->type == AMDGPU_BO_SLAB_ENTRY) {
@@ -1912,6 +1936,7 @@ uint64_t amdgpu_bo_get_va(struct pb_buffer_lean *buf)
    } else {
       return amdgpu_va_get_start_addr(get_real_bo(bo)->va_handle);
    }
+   #endif
 }
 
 static void amdgpu_buffer_destroy(struct radeon_winsys *rws, struct pb_buffer_lean *buf)

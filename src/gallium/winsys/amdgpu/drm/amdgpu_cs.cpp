@@ -272,6 +272,7 @@ static struct radeon_winsys_ctx *amdgpu_ctx_create(struct radeon_winsys *rws,
                                                    enum radeon_ctx_priority priority,
                                                    bool allow_context_lost)
 {
+   #if 0
    struct amdgpu_ctx *ctx = CALLOC_STRUCT(amdgpu_ctx);
    int r;
    struct amdgpu_bo_alloc_request alloc_buffer = {};
@@ -324,6 +325,7 @@ error_user_fence_alloc:
    ac_drm_cs_ctx_free(dev, ctx->ctx_handle);
 error_create:
    FREE(ctx);
+   #endif
    return NULL;
 }
 
@@ -361,6 +363,7 @@ static void amdgpu_pad_gfx_compute_ib(struct amdgpu_winsys *aws, enum amd_ip_typ
 
 static int amdgpu_submit_gfx_nop(struct amdgpu_ctx *ctx)
 {
+   #if 0
    struct amdgpu_bo_alloc_request request = {0};
    struct drm_amdgpu_bo_list_in bo_list_in;
    struct drm_amdgpu_cs_chunk_ib ib_in = {0};
@@ -446,6 +449,8 @@ destroy_ctx:
    ac_drm_cs_ctx_free(ctx->aws->dev, temp_ctx_handle);
 
    return r;
+   #endif
+   return 0;
 }
 
 static void
@@ -1165,6 +1170,7 @@ static void amdgpu_add_slab_backing_buffers(struct amdgpu_cs_context *cs)
 static unsigned amdgpu_cs_get_buffer_list(struct radeon_cmdbuf *rcs,
                                           struct radeon_bo_list_item *list)
 {
+   #if 0
     struct amdgpu_cs_context *cs = amdgpu_cs(rcs)->csc;
 
     /* We do this in the CS thread, but since we need to return the final usage of all buffers
@@ -1188,6 +1194,8 @@ static unsigned amdgpu_cs_get_buffer_list(struct radeon_cmdbuf *rcs,
         }
     }
     return num_real_buffers;
+    #endif
+    return 0;
 }
 
 static void add_fence_to_list(struct amdgpu_fence_list *fences,
@@ -1464,6 +1472,7 @@ static int amdgpu_cs_submit_ib_userq(struct amdgpu_userq *userq,
                                      uint64_t vm_timeline_point)
 {
    int r = 0;
+   #if 0
    struct amdgpu_winsys *aws = acs->aws;
    struct amdgpu_cs_context *cs = acs->cst;
 
@@ -1568,6 +1577,7 @@ static int amdgpu_cs_submit_ib_userq(struct amdgpu_userq *userq,
 
    *seq_no = userq->user_fence_seq_num;
    simple_mtx_unlock(&userq->lock);
+   #endif
 
    return r;
 }

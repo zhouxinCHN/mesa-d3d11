@@ -44,8 +44,8 @@ typedef unsigned int drm_handle_t;
 #else /* One of the BSDs */
 
 #include <stdint.h>
-#include <sys/ioccom.h>
-#include <sys/types.h>
+//#include <sys/ioccom.h>
+//#include <sys/types.h>
 typedef int8_t   __s8;
 typedef uint8_t  __u8;
 typedef int16_t  __s16;
@@ -121,7 +121,7 @@ struct drm_tex_region {
  * other data stored in the same cache line.
  */
 struct drm_hw_lock {
-	__volatile__ unsigned int lock;		/**< lock variable */
+	/*__volatile__*/ unsigned int lock;		/**< lock variable */
 	char padding[60];			/**< Pad to cache line */
 };
 

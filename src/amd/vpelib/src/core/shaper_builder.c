@@ -28,6 +28,8 @@
 #include "color.h"
 #include "color_gamma.h"
 
+#pragma warning(disable:4189)
+
 struct shaper_setup_out {
     int exp_begin_raw;
     int exp_end_raw;

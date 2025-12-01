@@ -18,10 +18,10 @@
 #include "util/thread_sched.h"
 #include "util/xmlconfig.h"
 #include "drm-uapi/amdgpu_drm.h"
-#include <xf86drm.h>
+//#include <xf86drm.h>
 #include <stdio.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+//#include <sys/stat.h>
+//#include <fcntl.h>
 #include "sid.h"
 
 static struct hash_table *dev_tab = NULL;
@@ -168,6 +168,7 @@ static bool amdgpu_cs_request_feature(struct radeon_cmdbuf *rcs,
 static uint64_t amdgpu_query_value(struct radeon_winsys *rws,
                                    enum radeon_value_id value)
 {
+   #if 0
    struct amdgpu_winsys *aws = amdgpu_winsys(rws);
    struct amdgpu_heap_info heap = {0};
    uint64_t retval = 0;
@@ -231,6 +232,7 @@ static uint64_t amdgpu_query_value(struct radeon_winsys *rws,
    case RADEON_CS_THREAD_TIME:
       return util_queue_get_thread_time_nano(&aws->cs_queue, 0);
    }
+   #endif
    return 0;
 }
 
@@ -275,7 +277,7 @@ static bool amdgpu_winsys_unref(struct radeon_winsys *rws)
 
       hash_table_foreach(sws->kms_handles, entry) {
          args.handle = (uintptr_t)entry->data;
-         drm_ioctl(sws->fd, DRM_IOCTL_GEM_CLOSE, &args);
+         //drm_ioctl(sws->fd, DRM_IOCTL_GEM_CLOSE, &args);
       }
       _mesa_hash_table_destroy(sws->kms_handles, NULL);
    }
@@ -372,6 +374,7 @@ amdgpu_drm_winsys_get_fd(struct radeon_winsys *rws)
    return sws->fd;
 }
 
+#if 0
 PUBLIC struct radeon_winsys *
 amdgpu_winsys_create(int fd, const struct pipe_screen_config *config,
 		     radeon_screen_create_t screen_create, bool is_virtio)
@@ -584,3 +587,4 @@ fail:
    simple_mtx_unlock(&dev_tab_mutex);
    return NULL;
 }
+           #endif

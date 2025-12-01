@@ -15,7 +15,7 @@
 #include "util/u_upload_mgr.h"
 #include "ac_rtld.h"
 #include "si_build_pm4.h"
-#include "si_tracepoints.h"
+//#include "si_tracepoints.h"
 
 #if (GFX_VER == 6)
 #define GFX(name) name##GFX6
@@ -484,6 +484,7 @@ static bool si_update_shaders(struct si_context *sctx)
 ALWAYS_INLINE
 static unsigned si_conv_pipe_prim(unsigned mode)
 {
+   #if 0
    static const unsigned prim_conv[] = {
       [MESA_PRIM_POINTS] = V_008958_DI_PT_POINTLIST,
       [MESA_PRIM_LINES] = V_008958_DI_PT_LINELIST,
@@ -503,6 +504,8 @@ static unsigned si_conv_pipe_prim(unsigned mode)
       [SI_PRIM_RECTANGLE_LIST] = V_008958_DI_PT_RECTLIST};
    assert(mode < ARRAY_SIZE(prim_conv));
    return prim_conv[mode];
+   #endif
+   return 0;
 }
 
 template<amd_gfx_level GFX_VERSION>
@@ -552,6 +555,7 @@ static void si_cp_dma_prefetch_inline(struct si_context *sctx, uint64_t address,
 void si_cp_dma_prefetch(struct si_context *sctx, struct pipe_resource *buf,
                         unsigned offset, unsigned size)
 {
+   #if 0
    uint64_t address = si_resource(buf)->gpu_address + offset;
    switch (sctx->gfx_level) {
    case GFX7:
@@ -581,6 +585,7 @@ void si_cp_dma_prefetch(struct si_context *sctx, struct pipe_resource *buf,
    default:
       break;
    }
+   #endif
 }
 
 #endif
@@ -2083,8 +2088,8 @@ static void si_draw(struct pipe_context *ctx,
 
    si_need_gfx_cs_space(sctx, num_draws, ALT_HIZ_LOGIC ? 8 : 0);
 
-   if (u_trace_perfetto_active(&sctx->ds.trace_context))
-      trace_si_begin_draw(&sctx->trace);
+//   if (u_trace_perfetto_active(&sctx->ds.trace_context))
+//      trace_si_begin_draw(&sctx->trace);
 
    unsigned instance_count = info->instance_count;
 
@@ -2420,7 +2425,7 @@ static void si_draw(struct pipe_context *ctx,
 
    if (u_trace_perfetto_active(&sctx->ds.trace_context)) {
       /* Just use the draw[0] vertex count for perfetto. */
-      trace_si_end_draw(&sctx->trace, draws[0].count);
+//      trace_si_end_draw(&sctx->trace, draws[0].count);
    }
 
    DRAW_CLEANUP;

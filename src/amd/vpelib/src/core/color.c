@@ -35,6 +35,8 @@
 #include "shaper_builder.h"
 #include "geometric_scaling.h"
 
+#pragma warning(disable:4189)
+
 static void color_check_input_cm_update(struct vpe_priv *vpe_priv, struct stream_ctx *stream_ctx,
     const struct vpe_color_space *vcs, const struct vpe_color_adjust *adjustments,
     bool enable_3dlut, bool geometric_update);

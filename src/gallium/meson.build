@@ -4,6 +4,8 @@
 
 sym_config = configuration_data()
 
+message('mark mark mark mark mark: ', with_gallium_radeonsi)
+
 foreach d : [[with_gallium_r300 or with_gallium_radeonsi or with_gallium_r600, 'radeon_drm_winsys_create'],
              [with_gallium_radeonsi, 'amdgpu_winsys_create'],
              [with_gallium_nouveau, 'nouveau_drm_screen_create'],
